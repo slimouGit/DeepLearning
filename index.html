@@ -11,7 +11,7 @@
   <main class="container">
     <h1>Bilderkennung mit ml5</h1>
     <p class="hint">
-      Wähle ein Bild aus. Es wird danach automatisch klassifiziert.
+      Wähle ein Bild aus. Die Klassifikation wird erst nach Klick auf den Button gestartet.
     </p>
 
     <div class="card">
@@ -24,6 +24,10 @@
       <div class="image-wrapper">
         <img id="previewImage" alt="Vorschau" hidden />
         <div id="placeholder">Noch kein Bild ausgewählt</div>
+      </div>
+
+      <div class="button-row">
+        <button id="classifyButton" disabled>Klassifikation starten</button>
       </div>
 
       <div class="result">
