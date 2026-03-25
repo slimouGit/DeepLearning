@@ -17,42 +17,10 @@
   <main class="container">
     <h1>Bilderkennung mit ml5</h1>
 
-    <h2 class="section-heading">Beispiel</h2>
-    <div class="card layout-grid example-card">
-      <section class="left-column">
-        <div class="image-wrapper">
-          <img id="exampleImage" src="images/Bananen.png" alt="Beispielbild: Bananen" />
-        </div>
-        <div id="exampleValidation" class="classification-eval neutral">Noch nicht bewertet</div>
-      </section>
+    <h2 class="section-heading">Beispiele</h2>
+    <div id="examplesContainer" class="example-list"></div>
 
-      <section class="right-column">
-        <div class="result">
-          <p><strong>Status:</strong> <span id="exampleStatus">Modell wird geladen...</span></p>
-          <p><strong>Ergebnis:</strong> <span id="exampleLabel">-</span></p>
-          <p><strong>Confidence:</strong> <span id="exampleConfidence">-</span></p>
-        </div>
-
-        <div class="chart-section">
-          <div class="chart-header">
-            <h2>Confidence-Verteilung</h2>
-            <label for="exampleChartType">Diagrammtyp:</label>
-            <select id="exampleChartType">
-              <option value="bar">Balken</option>
-              <option value="pie">Pie</option>
-              <option value="doughnut">Doughnut</option>
-              <option value="polarArea">Polar Area</option>
-              <option value="radar">Radar</option>
-            </select>
-          </div>
-          <p id="exampleChartStatus" class="chart-status">Wird nach Modellladung klassifiziert...</p>
-          <div class="chart-wrapper">
-            <canvas id="exampleChart" aria-label="Beispielklassifikation als Diagramm"></canvas>
-            <div id="exampleChartFallback" class="chart-fallback" hidden></div>
-          </div>
-        </div>
-      </section>
-    </div>
+    
 
     <h2 class="section-heading">Eigenes Bild klassifizieren</h2>
     <p class="hint">Wähle ein Bild aus. Die Klassifikation wird erst nach Klick auf den Button gestartet.</p>
@@ -103,6 +71,46 @@
       </section>
     </div>
   </main>
+
+  <template id="exampleCardTemplate">
+    <div class="card layout-grid example-card">
+      <section class="left-column">
+        <p class="example-title"></p>
+        <div class="image-wrapper">
+          <img class="example-image" alt="Beispielbild" />
+        </div>
+        <div class="classification-eval neutral">Noch nicht bewertet</div>
+      </section>
+
+      <section class="right-column">
+        <div class="result">
+          <p><strong>Status:</strong> <span class="example-status">Modell wird geladen...</span></p>
+          <p><strong>Ergebnis:</strong> <span class="example-label">-</span></p>
+          <p><strong>Confidence:</strong> <span class="example-confidence">-</span></p>
+        </div>
+
+        <div class="chart-section">
+          <div class="chart-header">
+            <h2>Confidence-Verteilung</h2>
+            <label>Diagrammtyp:
+              <select class="example-chart-type">
+                <option value="bar">Balken</option>
+                <option value="pie">Pie</option>
+                <option value="doughnut">Doughnut</option>
+                <option value="polarArea">Polar Area</option>
+                <option value="radar">Radar</option>
+              </select>
+            </label>
+          </div>
+          <p class="chart-status">Wird nach Modellladung klassifiziert...</p>
+          <div class="chart-wrapper">
+            <canvas class="example-chart" aria-label="Beispielklassifikation als Diagramm"></canvas>
+            <div class="chart-fallback" hidden></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </template>
 
   <script src="script.js"></script>
 </body>

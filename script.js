@@ -2,39 +2,24 @@ let classifier = null;
 let modelReady = false;
 let imageReady = false;
 let latestResults = [];
-let latestExampleResults = [];
 
-// User section DOM refs
-const imageUpload    = document.getElementById("imageUpload");
-const previewImage   = document.getElementById("previewImage");
-const placeholder    = document.getElementById("placeholder");
+const imageUpload = document.getElementById("imageUpload");
+const previewImage = document.getElementById("previewImage");
+const placeholder = document.getElementById("placeholder");
 const classifyButton = document.getElementById("classifyButton");
-const statusText     = document.getElementById("status");
-const labelText      = document.getElementById("label");
+const statusText = document.getElementById("status");
+const labelText = document.getElementById("label");
 const confidenceText = document.getElementById("confidence");
 
-// Example section DOM refs
-const exampleImage          = document.getElementById("exampleImage");
-const exampleStatusText     = document.getElementById("exampleStatus");
-const exampleLabelText      = document.getElementById("exampleLabel");
-const exampleConfidenceText = document.getElementById("exampleConfidence");
-const exampleValidationText = document.getElementById("exampleValidation");
+const examplesContainer = document.getElementById("examplesContainer");
+const exampleTemplate = document.getElementById("exampleCardTemplate");
 
-// Chart context objects – each holds its own Canvas, fallback, status el, type select and chart instance
 const userChartCtx = {
-  canvas:    document.getElementById("resultChart"),
-  fallback:  document.getElementById("chartFallback"),
-  statusEl:  document.getElementById("chartStatus"),
+  canvas: document.getElementById("resultChart"),
+  fallback: document.getElementById("chartFallback"),
+  statusEl: document.getElementById("chartStatus"),
   typeSelect: document.getElementById("chartType"),
-  instance:  null
-};
-
-const exampleChartCtx = {
-  canvas:    document.getElementById("exampleChart"),
-  fallback:  document.getElementById("exampleChartFallback"),
-  statusEl:  document.getElementById("exampleChartStatus"),
-  typeSelect: document.getElementById("exampleChartType"),
-  instance:  null
+  instance: null
 };
 
 const chartPalette = [
@@ -50,12 +35,74 @@ const chartPalette = [
   "#b8c0ff"
 ];
 
+const examplesConfig = [
+  { title: "Beispiel 1", imagePath: "images/Bananen.png", alt: "Beispielbild: Bananen" },
+  { title: "Beispiel 2", imagePath: "images/Cheesehat.png", alt: "Beispielbild: Cheesehat" }
+];
+
+const exampleCards = [];
 const TOP_K = 5;
 const VALID_CONFIDENCE_THRESHOLD = 80;
 const isFileProtocol = window.location.protocol === "file:";
 
 if (window.Chart && window.ChartDataLabels) {
   Chart.register(ChartDataLabels);
+}
+
+function buildExampleCards() {
+  if (!examplesContainer || !exampleTemplate) {
+    return;
+  }
+
+  examplesContainer.innerHTML = "";
+
+  examplesConfig.forEach((item, index) => {
+    const fragment = exampleTemplate.content.cloneNode(true);
+    const card = fragment.querySelector(".example-card");
+
+    const titleEl = fragment.querySelector(".example-title");
+    const imageEl = fragment.querySelector(".example-image");
+    const statusEl = fragment.querySelector(".example-status");
+    const labelEl = fragment.querySelector(".example-label");
+    const confidenceEl = fragment.querySelector(".example-confidence");
+    const validationEl = fragment.querySelector(".classification-eval");
+    const chartTypeSelect = fragment.querySelector(".example-chart-type");
+    const chartStatusEl = fragment.querySelector(".chart-status");
+    const chartCanvas = fragment.querySelector(".example-chart");
+    const chartFallback = fragment.querySelector(".chart-fallback");
+
+    titleEl.textContent = item.title || `Beispiel ${index + 1}`;
+    imageEl.src = item.imagePath;
+    imageEl.alt = item.alt || `Beispielbild ${index + 1}`;
+
+    const state = {
+      imageEl,
+      statusEl,
+      labelEl,
+      confidenceEl,
+      validationEl,
+      latestResults: [],
+      chartCtx: {
+        canvas: chartCanvas,
+        fallback: chartFallback,
+        statusEl: chartStatusEl,
+        typeSelect: chartTypeSelect,
+        instance: null
+      }
+    };
+
+    setExampleValidation(state.validationEl);
+
+    chartTypeSelect.addEventListener("change", () => {
+      if (state.latestResults.length === 0) {
+        return;
+      }
+      renderChart(state.latestResults, state.chartCtx);
+    });
+
+    examplesContainer.appendChild(card);
+    exampleCards.push(state);
+  });
 }
 
 function syncCanvasSize(chartCtx) {
@@ -109,33 +156,37 @@ async function init() {
     if (isFileProtocol) {
       const fileProtocolMessage = "Bitte ueber lokalen Server starten (http://localhost), nicht per file://.";
       statusText.textContent = fileProtocolMessage;
-      if (exampleStatusText) {
-        exampleStatusText.textContent = fileProtocolMessage;
-      }
-      if (classifyButton) {
-        classifyButton.disabled = true;
-      }
+      classifyButton.disabled = true;
       setChartStatus("Kein Chart-Update im file://-Modus.", userChartCtx);
-      setChartStatus("Kein Chart-Update im file://-Modus.", exampleChartCtx);
+
+      exampleCards.forEach((card) => {
+        card.statusEl.textContent = fileProtocolMessage;
+        setChartStatus("Kein Chart-Update im file://-Modus.", card.chartCtx);
+        setExampleValidation(card.validationEl);
+      });
       return;
     }
 
     statusText.textContent = "Modell wird geladen...";
-    if (exampleStatusText) {
-      exampleStatusText.textContent = "Modell wird geladen...";
-    }
+    exampleCards.forEach((card) => {
+      card.statusEl.textContent = "Modell wird geladen...";
+    });
+
     classifier = await ml5.imageClassifier("MobileNet");
     modelReady = true;
     statusText.textContent = "Modell geladen. Bitte Bild auswählen.";
     updateButtonState();
-    console.log("Modell erfolgreich geladen:", classifier);
-    await classifyExample();
+
+    for (const card of exampleCards) {
+      await classifyExampleCard(card);
+    }
   } catch (error) {
     console.error("Fehler beim Laden des Modells:", error);
     statusText.textContent = "Fehler beim Laden des Modells.";
-    if (exampleStatusText) {
-      exampleStatusText.textContent = "Fehler beim Laden des Modells.";
-    }
+    exampleCards.forEach((card) => {
+      card.statusEl.textContent = "Fehler beim Laden des Modells.";
+      setExampleValidation(card.validationEl);
+    });
   }
 }
 
@@ -178,16 +229,16 @@ function updateButtonState() {
   classifyButton.disabled = !(modelReady && imageReady);
 }
 
-function setExampleValidation(confidencePercent) {
-  if (!exampleValidationText) {
+function setExampleValidation(validationEl, confidencePercent) {
+  if (!validationEl) {
     return;
   }
 
-  exampleValidationText.classList.remove("neutral", "correct", "wrong");
+  validationEl.classList.remove("neutral", "correct", "wrong");
 
   if (typeof confidencePercent !== "number") {
-    exampleValidationText.classList.add("neutral");
-    exampleValidationText.innerHTML = `
+    validationEl.classList.add("neutral");
+    validationEl.innerHTML = `
       <div class="eval-head">
         <span class="eval-text">Noch nicht bewertet</span>
         <span class="eval-score">-</span>
@@ -202,8 +253,8 @@ function setExampleValidation(confidencePercent) {
   const meterWidth = Math.max(0, Math.min(confidencePercent, 100));
 
   if (confidencePercent >= VALID_CONFIDENCE_THRESHOLD) {
-    exampleValidationText.classList.add("correct");
-    exampleValidationText.innerHTML = `
+    validationEl.classList.add("correct");
+    validationEl.innerHTML = `
       <div class="eval-head">
         <span class="eval-text">Richtig klassifiziert</span>
         <span class="eval-score">${confidencePercent.toFixed(2)} %</span>
@@ -213,8 +264,8 @@ function setExampleValidation(confidencePercent) {
       </div>
     `;
   } else {
-    exampleValidationText.classList.add("wrong");
-    exampleValidationText.innerHTML = `
+    validationEl.classList.add("wrong");
+    validationEl.innerHTML = `
       <div class="eval-head">
         <span class="eval-text">Falsch klassifiziert</span>
         <span class="eval-score">${confidencePercent.toFixed(2)} %</span>
@@ -335,26 +386,22 @@ if (userChartCtx.typeSelect) {
     if (latestResults.length === 0) {
       return;
     }
-
     renderChart(latestResults, userChartCtx);
-  });
-}
-
-if (exampleChartCtx.typeSelect) {
-  exampleChartCtx.typeSelect.addEventListener("change", () => {
-    if (latestExampleResults.length === 0) {
-      return;
-    }
-
-    renderChart(latestExampleResults, exampleChartCtx);
   });
 }
 
 window.addEventListener("resize", () => {
   syncCanvasSize(userChartCtx);
-  syncCanvasSize(exampleChartCtx);
-  if (userChartCtx.instance) userChartCtx.instance.resize();
-  if (exampleChartCtx.instance) exampleChartCtx.instance.resize();
+  if (userChartCtx.instance) {
+    userChartCtx.instance.resize();
+  }
+
+  exampleCards.forEach((card) => {
+    syncCanvasSize(card.chartCtx);
+    if (card.chartCtx.instance) {
+      card.chartCtx.instance.resize();
+    }
+  });
 });
 
 imageUpload.addEventListener("change", (event) => {
@@ -418,15 +465,12 @@ async function classifyImage() {
     confidenceText.textContent = "-";
 
     const results = await classifyInput(previewImage);
-    console.log("Klassifikationsergebnisse:", results);
-
     if (!results || results.length === 0) {
       statusText.textContent = "Keine Ergebnisse erhalten.";
       return;
     }
 
     const bestResult = results[0];
-
     statusText.textContent = "Klassifikation abgeschlossen.";
     labelText.textContent = bestResult.label;
     confidenceText.textContent = `${(bestResult.confidence * 100).toFixed(2)} %`;
@@ -443,41 +487,42 @@ async function classifyImage() {
   }
 }
 
-async function classifyExample() {
-  if (!exampleImage) {
+async function classifyExampleCard(card) {
+  if (!card?.imageEl) {
     return;
   }
 
   try {
-    exampleStatusText.textContent = "Bild wird klassifiziert...";
-    await ensureImageLoaded(exampleImage);
-    const results = await classifyInput(exampleImage);
-    console.log("Beispiel-Klassifikationsergebnisse:", results);
+    card.statusEl.textContent = "Bild wird klassifiziert...";
+    await ensureImageLoaded(card.imageEl);
+    const results = await classifyInput(card.imageEl);
 
     if (!results || results.length === 0) {
-      exampleStatusText.textContent = "Keine Ergebnisse erhalten.";
+      card.statusEl.textContent = "Keine Ergebnisse erhalten.";
+      setExampleValidation(card.validationEl);
       return;
     }
 
     const bestResult = results[0];
     const confidencePercent = bestResult.confidence * 100;
-    exampleStatusText.textContent = "Klassifikation abgeschlossen.";
-    exampleLabelText.textContent = bestResult.label;
-    exampleConfidenceText.textContent = `${confidencePercent.toFixed(2)} %`;
-    setExampleValidation(confidencePercent);
-    latestExampleResults = results;
-    renderChart(results, exampleChartCtx);
+    card.statusEl.textContent = "Klassifikation abgeschlossen.";
+    card.labelEl.textContent = bestResult.label;
+    card.confidenceEl.textContent = `${confidencePercent.toFixed(2)} %`;
+    setExampleValidation(card.validationEl, confidencePercent);
+    card.latestResults = results;
+    renderChart(results, card.chartCtx);
   } catch (error) {
     console.error("Fehler bei der Beispiel-Klassifikation:", error);
     const message = error?.message || "Unbekannter Fehler";
     if (String(message).toLowerCase().includes("insecure")) {
-      exampleStatusText.textContent = "Fehler bei der Klassifikation: Bitte ueber http://localhost starten (nicht file://).";
-      setExampleValidation();
+      card.statusEl.textContent = "Fehler bei der Klassifikation: Bitte ueber http://localhost starten (nicht file://).";
+      setExampleValidation(card.validationEl);
       return;
     }
-    exampleStatusText.textContent = `Fehler bei der Klassifikation: ${message}`;
-    setExampleValidation();
+    card.statusEl.textContent = `Fehler bei der Klassifikation: ${message}`;
+    setExampleValidation(card.validationEl);
   }
 }
 
+buildExampleCards();
 init();
