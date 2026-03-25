@@ -36,13 +36,15 @@ const chartPalette = [
 ];
 
 const examplesConfig = [
-  { title: "Beispiel 1", imagePath: "images/Bananen.png", alt: "Beispielbild: Bananen" },
-  { title: "Beispiel 2", imagePath: "images/Cheesehat.png", alt: "Beispielbild: Cheesehat" }
+  { title: "Beispiel 1", imagePath: "images/banana.png", alt: "Beispielbild: Bananen" },
+  { title: "Beispiel 2", imagePath: "images/apple.jpg", alt: "Beispielbild: Äpfel" },
+  { title: "Beispiel 3", imagePath: "images/firetruck.jpg", alt: "Beispielbild: Feuerwehrauto" },
+  { title: "Beispiel 4", imagePath: "images/cheeshat.png", alt: "Beispielbild: Cheesehat" }
 ];
 
 const exampleCards = [];
 const TOP_K = 5;
-const VALID_CONFIDENCE_THRESHOLD = 80;
+const VALID_CONFIDENCE_THRESHOLD = 50;
 const isFileProtocol = window.location.protocol === "file:";
 
 if (window.Chart && window.ChartDataLabels) {
@@ -172,7 +174,7 @@ async function init() {
       card.statusEl.textContent = "Modell wird geladen...";
     });
 
-    classifier = await ml5.imageClassifier("MobileNet");
+    classifier = await createClassifier();
     modelReady = true;
     statusText.textContent = "Modell geladen. Bitte Bild auswählen.";
     updateButtonState();
@@ -182,16 +184,92 @@ async function init() {
     }
   } catch (error) {
     console.error("Fehler beim Laden des Modells:", error);
-    statusText.textContent = "Fehler beim Laden des Modells.";
+    const message = error?.message || "Unbekannter Fehler";
+    statusText.textContent = `Fehler beim Laden des Modells: ${message}`;
     exampleCards.forEach((card) => {
-      card.statusEl.textContent = "Fehler beim Laden des Modells.";
+      card.statusEl.textContent = `Fehler beim Laden des Modells: ${message}`;
       setExampleValidation(card.validationEl);
     });
   }
 }
 
+async function createClassifier() {
+  if (!window.ml5 || typeof ml5.imageClassifier !== "function") {
+    throw new Error("ml5 konnte nicht geladen werden (CDN/Netzwerk).");
+  }
+
+  const maybeClassifier = ml5.imageClassifier("MobileNet");
+
+  // Some builds return a Promise, others return the classifier object directly.
+  const resolvedClassifier =
+    maybeClassifier && typeof maybeClassifier.then === "function"
+      ? await maybeClassifier
+      : maybeClassifier;
+
+  if (!resolvedClassifier || typeof resolvedClassifier !== "object") {
+    throw new Error("ImageClassifier konnte nicht initialisiert werden.");
+  }
+
+  // ml5 v1 exposes a ready Promise on model instances.
+  if (resolvedClassifier.ready && typeof resolvedClassifier.ready.then === "function") {
+    await resolvedClassifier.ready;
+  }
+
+  if (typeof resolvedClassifier.classify !== "function") {
+    throw new Error("ImageClassifier-Instanz ist ungueltig.");
+  }
+
+  return resolvedClassifier;
+}
+
 async function classifyInput(input) {
-  const results = await classifier.classify(input);
+  let results = [];
+
+  try {
+    const maybePromise = classifier.classify(input, TOP_K);
+    if (maybePromise && typeof maybePromise.then === "function") {
+      results = await maybePromise;
+    }
+  } catch (error) {
+    console.warn("Promise-basierte Klassifikation fehlgeschlagen, nutze Callback-Fallback:", error);
+  }
+
+  if (!Array.isArray(results)) {
+    results = await new Promise((resolve, reject) => {
+      const callback = (...args) => {
+        const first = args[0];
+        const second = args[1];
+
+        if (Array.isArray(first)) {
+          resolve(first);
+          return;
+        }
+
+        if (Array.isArray(second)) {
+          resolve(second);
+          return;
+        }
+
+        if (first instanceof Error) {
+          reject(first);
+          return;
+        }
+
+        resolve([]);
+      };
+
+      try {
+        classifier.classify(input, TOP_K, callback);
+      } catch (firstError) {
+        try {
+          classifier.classify(input, callback);
+        } catch (secondError) {
+          reject(secondError || firstError);
+        }
+      }
+    });
+  }
+
   if (!results || !Array.isArray(results)) {
     return [];
   }
