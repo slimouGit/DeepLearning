@@ -16,46 +16,50 @@
       Wähle ein Bild aus. Die Klassifikation wird erst nach Klick auf den Button gestartet.
     </p>
 
-    <div class="card">
-      <input
-        type="file"
-        id="imageUpload"
-        accept="image/jpeg,image/png,image/webp"
-      />
+    <div class="card layout-grid">
+      <section class="left-column">
+        <input
+          type="file"
+          id="imageUpload"
+          accept="image/jpeg,image/png,image/webp"
+        />
 
-      <div class="image-wrapper">
-        <img id="previewImage" alt="Vorschau" hidden />
-        <div id="placeholder">Noch kein Bild ausgewählt</div>
-      </div>
-
-      <div class="button-row">
-        <button id="classifyButton" disabled>Klassifikation starten</button>
-      </div>
-
-      <div class="result">
-        <p><strong>Status:</strong> <span id="status">Modell wird geladen...</span></p>
-        <p><strong>Ergebnis:</strong> <span id="label">-</span></p>
-        <p><strong>Confidence:</strong> <span id="confidence">-</span></p>
-      </div>
-
-      <div class="chart-section">
-        <div class="chart-header">
-          <h2>Confidence-Verteilung</h2>
-          <label for="chartType">Diagrammtyp:</label>
-          <select id="chartType">
-            <option value="bar">Balken</option>
-            <option value="pie">Pie</option>
-            <option value="doughnut">Doughnut</option>
-            <option value="polarArea">Polar Area</option>
-            <option value="radar">Radar</option>
-          </select>
+        <div class="image-wrapper">
+          <img id="previewImage" alt="Vorschau" hidden />
+          <div id="placeholder">Noch kein Bild ausgewählt</div>
         </div>
-        <p id="chartStatus" class="chart-status">Diagramm wird nach der Klassifikation angezeigt.</p>
-        <div class="chart-wrapper">
-          <canvas id="resultChart" aria-label="Klassifikationsergebnisse als Diagramm"></canvas>
-          <div id="chartFallback" class="chart-fallback" hidden></div>
+
+        <div class="button-row">
+          <button id="classifyButton" disabled>Klassifikation starten</button>
         </div>
-      </div>
+      </section>
+
+      <section class="right-column">
+        <div class="result">
+          <p><strong>Status:</strong> <span id="status">Modell wird geladen...</span></p>
+          <p><strong>Ergebnis:</strong> <span id="label">-</span></p>
+          <p><strong>Confidence:</strong> <span id="confidence">-</span></p>
+        </div>
+
+        <div class="chart-section">
+          <div class="chart-header">
+            <h2>Confidence-Verteilung</h2>
+            <label for="chartType">Diagrammtyp:</label>
+            <select id="chartType">
+              <option value="bar">Balken</option>
+              <option value="pie">Pie</option>
+              <option value="doughnut">Doughnut</option>
+              <option value="polarArea">Polar Area</option>
+              <option value="radar">Radar</option>
+            </select>
+          </div>
+          <p id="chartStatus" class="chart-status">Diagramm wird nach der Klassifikation angezeigt.</p>
+          <div class="chart-wrapper">
+            <canvas id="resultChart" aria-label="Klassifikationsergebnisse als Diagramm"></canvas>
+            <div id="chartFallback" class="chart-fallback" hidden></div>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 
