@@ -123,11 +123,64 @@ button:disabled {
 .chart-wrapper {
   position: relative;
   width: 100%;
-  min-height: 340px;
+  height: 340px;
+}
+
+.chart-status {
+  margin: 0 0 12px;
+  color: #52606d;
+  font-size: 14px;
+}
+
+#resultChart {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.chart-fallback {
+  height: 100%;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.fallback-row {
+  margin-bottom: 12px;
+}
+
+.fallback-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.fallback-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fallback-value {
+  font-weight: 700;
+}
+
+.fallback-track {
+  width: 100%;
+  height: 12px;
+  border-radius: 8px;
+  background: #e8edf2;
+  overflow: hidden;
+}
+
+.fallback-bar {
+  height: 100%;
+  border-radius: 8px;
 }
 
 @media (max-width: 600px) {
   .chart-wrapper {
-    min-height: 280px;
+    height: 260px;
   }
 }

@@ -2,6 +2,7 @@ let classifier = null;
 let modelReady = false;
 let imageReady = false;
 let resultChart = null;
+let latestResults = [];
 
 const imageUpload = document.getElementById("imageUpload");
 const previewImage = document.getElementById("previewImage");
@@ -9,6 +10,8 @@ const placeholder = document.getElementById("placeholder");
 const classifyButton = document.getElementById("classifyButton");
 const chartTypeSelect = document.getElementById("chartType");
 const resultChartCanvas = document.getElementById("resultChart");
+const chartFallback = document.getElementById("chartFallback");
+const chartStatus = document.getElementById("chartStatus");
 
 const statusText = document.getElementById("status");
 const labelText = document.getElementById("label");
@@ -29,6 +32,60 @@ const chartPalette = [
 
 if (window.Chart && window.ChartDataLabels) {
   Chart.register(ChartDataLabels);
+}
+
+function getSelectedChartType() {
+  if (!chartTypeSelect) {
+    return "bar";
+  }
+
+  return chartTypeSelect.value;
+}
+
+function syncCanvasSize() {
+  if (!resultChartCanvas) {
+    return;
+  }
+
+  const isMobile = window.matchMedia("(max-width: 600px)").matches;
+  resultChartCanvas.style.height = isMobile ? "260px" : "340px";
+}
+
+function setChartStatus(message) {
+  if (chartStatus) {
+    chartStatus.textContent = message;
+  }
+}
+
+function renderFallbackBars(results) {
+  if (!chartFallback || !resultChartCanvas) {
+    return;
+  }
+
+  resultChartCanvas.hidden = true;
+  chartFallback.hidden = false;
+
+  const items = results
+    .map((item, index) => {
+      const label = normalizeLabel(item.label);
+      const value = Number((item.confidence * 100).toFixed(2));
+      const color = chartPalette[index % chartPalette.length];
+
+      return `
+        <div class="fallback-row">
+          <div class="fallback-topline">
+            <span class="fallback-label">${label}</span>
+            <span class="fallback-value">${value.toFixed(2)} %</span>
+          </div>
+          <div class="fallback-track">
+            <div class="fallback-bar" style="width: ${Math.min(value, 100)}%; background: ${color};"></div>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  chartFallback.innerHTML = items;
 }
 
 async function init() {
@@ -101,47 +158,74 @@ function getChartOptions(type) {
 
 function renderChart(results) {
   if (!resultChartCanvas || !window.Chart) {
+    renderFallbackBars(results);
+    setChartStatus("Chart.js nicht verfügbar - Fallback-Balken werden angezeigt.");
     return;
   }
 
-  const chartType = chartTypeSelect.value;
+  const chartType = getSelectedChartType();
   const labels = results.map((item) => normalizeLabel(item.label));
   const confidences = results.map((item) => Number((item.confidence * 100).toFixed(2)));
   const colors = labels.map((_, index) => chartPalette[index % chartPalette.length]);
+  latestResults = results;
+  syncCanvasSize();
+  resultChartCanvas.hidden = false;
+
+  if (chartFallback) {
+    chartFallback.hidden = true;
+    chartFallback.innerHTML = "";
+  }
 
   if (resultChart) {
     resultChart.destroy();
   }
 
-  resultChart = new Chart(resultChartCanvas, {
-    type: chartType,
-    data: {
-      labels,
-      datasets: [
-        {
-          label: "Confidence in %",
-          data: confidences,
-          backgroundColor: colors,
-          borderColor: "#1b1b1b",
-          borderWidth: chartType === "bar" || chartType === "radar" ? 1 : 0
-        }
-      ]
-    },
-    options: getChartOptions(chartType)
+  try {
+    const ctx = resultChartCanvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("2D-Kontext nicht verfuegbar");
+    }
+
+    resultChart = new Chart(resultChartCanvas, {
+      type: chartType,
+      data: {
+        labels,
+        datasets: [
+          {
+            label: "Confidence in %",
+            data: confidences,
+            backgroundColor: colors,
+            borderColor: "#1b1b1b",
+            borderWidth: chartType === "bar" || chartType === "radar" ? 1 : 0
+          }
+        ]
+      },
+      options: getChartOptions(chartType)
+    });
+    setChartStatus("Diagramm erfolgreich aktualisiert.");
+  } catch (error) {
+    console.error("Fehler beim Rendern des Diagramms:", error);
+    renderFallbackBars(results);
+    setChartStatus("Diagramm konnte nicht gerendert werden - Fallback-Balken aktiv.");
+  }
+}
+
+if (chartTypeSelect) {
+  chartTypeSelect.addEventListener("change", () => {
+    if (latestResults.length === 0) {
+      return;
+    }
+
+    renderChart(latestResults);
   });
 }
 
-chartTypeSelect.addEventListener("change", () => {
-  if (!resultChart) {
-    return;
+window.addEventListener("resize", () => {
+  syncCanvasSize();
+
+  if (resultChart) {
+    resultChart.resize();
   }
-
-  const currentResults = resultChart.data.labels.map((label, index) => ({
-    label,
-    confidence: resultChart.data.datasets[0].data[index] / 100
-  }));
-
-  renderChart(currentResults);
 });
 
 imageUpload.addEventListener("change", (event) => {

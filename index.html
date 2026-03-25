@@ -6,7 +6,7 @@
   <title>Bilderkennung mit ml5</title>
   <link rel="stylesheet" href="style.css" />
   <script src="https://unpkg.com/ml5@1/dist/ml5.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 </head>
 <body>
@@ -50,8 +50,10 @@
             <option value="radar">Radar</option>
           </select>
         </div>
+        <p id="chartStatus" class="chart-status">Diagramm wird nach der Klassifikation angezeigt.</p>
         <div class="chart-wrapper">
           <canvas id="resultChart" aria-label="Klassifikationsergebnisse als Diagramm"></canvas>
+          <div id="chartFallback" class="chart-fallback" hidden></div>
         </div>
       </div>
     </div>
