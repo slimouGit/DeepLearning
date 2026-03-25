@@ -1,21 +1,40 @@
 let classifier = null;
 let modelReady = false;
 let imageReady = false;
-let resultChart = null;
 let latestResults = [];
+let latestExampleResults = [];
 
-const imageUpload = document.getElementById("imageUpload");
-const previewImage = document.getElementById("previewImage");
-const placeholder = document.getElementById("placeholder");
+// User section DOM refs
+const imageUpload    = document.getElementById("imageUpload");
+const previewImage   = document.getElementById("previewImage");
+const placeholder    = document.getElementById("placeholder");
 const classifyButton = document.getElementById("classifyButton");
-const chartTypeSelect = document.getElementById("chartType");
-const resultChartCanvas = document.getElementById("resultChart");
-const chartFallback = document.getElementById("chartFallback");
-const chartStatus = document.getElementById("chartStatus");
-
-const statusText = document.getElementById("status");
-const labelText = document.getElementById("label");
+const statusText     = document.getElementById("status");
+const labelText      = document.getElementById("label");
 const confidenceText = document.getElementById("confidence");
+
+// Example section DOM refs
+const exampleImage          = document.getElementById("exampleImage");
+const exampleStatusText     = document.getElementById("exampleStatus");
+const exampleLabelText      = document.getElementById("exampleLabel");
+const exampleConfidenceText = document.getElementById("exampleConfidence");
+
+// Chart context objects – each holds its own Canvas, fallback, status el, type select and chart instance
+const userChartCtx = {
+  canvas:    document.getElementById("resultChart"),
+  fallback:  document.getElementById("chartFallback"),
+  statusEl:  document.getElementById("chartStatus"),
+  typeSelect: document.getElementById("chartType"),
+  instance:  null
+};
+
+const exampleChartCtx = {
+  canvas:    document.getElementById("exampleChart"),
+  fallback:  document.getElementById("exampleChartFallback"),
+  statusEl:  document.getElementById("exampleChartStatus"),
+  typeSelect: document.getElementById("exampleChartType"),
+  instance:  null
+};
 
 const chartPalette = [
   "#264653",
@@ -30,40 +49,35 @@ const chartPalette = [
   "#b8c0ff"
 ];
 
+const TOP_K = 5;
+const isFileProtocol = window.location.protocol === "file:";
+
 if (window.Chart && window.ChartDataLabels) {
   Chart.register(ChartDataLabels);
 }
 
-function getSelectedChartType() {
-  if (!chartTypeSelect) {
-    return "bar";
-  }
-
-  return chartTypeSelect.value;
-}
-
-function syncCanvasSize() {
-  if (!resultChartCanvas) {
+function syncCanvasSize(chartCtx) {
+  if (!chartCtx.canvas) {
     return;
   }
 
   const isMobile = window.matchMedia("(max-width: 600px)").matches;
-  resultChartCanvas.style.height = isMobile ? "260px" : "340px";
+  chartCtx.canvas.style.height = isMobile ? "260px" : "340px";
 }
 
-function setChartStatus(message) {
-  if (chartStatus) {
-    chartStatus.textContent = message;
+function setChartStatus(message, chartCtx) {
+  if (chartCtx.statusEl) {
+    chartCtx.statusEl.textContent = message;
   }
 }
 
-function renderFallbackBars(results) {
-  if (!chartFallback || !resultChartCanvas) {
+function renderFallbackBars(results, chartCtx) {
+  if (!chartCtx.fallback || !chartCtx.canvas) {
     return;
   }
 
-  resultChartCanvas.hidden = true;
-  chartFallback.hidden = false;
+  chartCtx.canvas.hidden = true;
+  chartCtx.fallback.hidden = false;
 
   const items = results
     .map((item, index) => {
@@ -75,7 +89,7 @@ function renderFallbackBars(results) {
         <div class="fallback-row">
           <div class="fallback-topline">
             <span class="fallback-label">${label}</span>
-            <span class="fallback-value">${value.toFixed(2)} %</span>
+            <span class="fallback-value">${value.toFixed(2)}\u00a0%</span>
           </div>
           <div class="fallback-track">
             <div class="fallback-bar" style="width: ${Math.min(value, 100)}%; background: ${color};"></div>
@@ -85,21 +99,77 @@ function renderFallbackBars(results) {
     })
     .join("");
 
-  chartFallback.innerHTML = items;
+  chartCtx.fallback.innerHTML = items;
 }
 
 async function init() {
   try {
+    if (isFileProtocol) {
+      const fileProtocolMessage = "Bitte ueber lokalen Server starten (http://localhost), nicht per file://.";
+      statusText.textContent = fileProtocolMessage;
+      if (exampleStatusText) {
+        exampleStatusText.textContent = fileProtocolMessage;
+      }
+      if (classifyButton) {
+        classifyButton.disabled = true;
+      }
+      setChartStatus("Kein Chart-Update im file://-Modus.", userChartCtx);
+      setChartStatus("Kein Chart-Update im file://-Modus.", exampleChartCtx);
+      return;
+    }
+
     statusText.textContent = "Modell wird geladen...";
+    if (exampleStatusText) {
+      exampleStatusText.textContent = "Modell wird geladen...";
+    }
     classifier = await ml5.imageClassifier("MobileNet");
     modelReady = true;
     statusText.textContent = "Modell geladen. Bitte Bild auswählen.";
     updateButtonState();
     console.log("Modell erfolgreich geladen:", classifier);
+    await classifyExample();
   } catch (error) {
     console.error("Fehler beim Laden des Modells:", error);
     statusText.textContent = "Fehler beim Laden des Modells.";
+    if (exampleStatusText) {
+      exampleStatusText.textContent = "Fehler beim Laden des Modells.";
+    }
   }
+}
+
+async function classifyInput(input) {
+  const results = await classifier.classify(input);
+  if (!results || !Array.isArray(results)) {
+    return [];
+  }
+  return results.slice(0, TOP_K);
+}
+
+async function ensureImageLoaded(img) {
+  if (!img) {
+    throw new Error("Bildelement nicht gefunden.");
+  }
+
+  if (img.complete && img.naturalWidth > 0) {
+    return;
+  }
+
+  await new Promise((resolve, reject) => {
+    const onLoad = () => {
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+      resolve();
+    };
+
+    const onError = () => {
+      img.removeEventListener("load", onLoad);
+      img.removeEventListener("error", onError);
+      reject(new Error("Bild konnte nicht geladen werden."));
+    };
+
+    img.addEventListener("load", onLoad, { once: true });
+    img.addEventListener("error", onError, { once: true });
+  });
 }
 
 function updateButtonState() {
@@ -156,37 +226,37 @@ function getChartOptions(type) {
   };
 }
 
-function renderChart(results) {
-  if (!resultChartCanvas || !window.Chart) {
-    renderFallbackBars(results);
-    setChartStatus("Chart.js nicht verfügbar - Fallback-Balken werden angezeigt.");
+function renderChart(results, chartCtx) {
+  if (!chartCtx.canvas || !window.Chart) {
+    renderFallbackBars(results, chartCtx);
+    setChartStatus("Chart.js nicht verfügbar - Fallback-Balken werden angezeigt.", chartCtx);
     return;
   }
 
-  const chartType = getSelectedChartType();
+  const chartType = chartCtx.typeSelect ? chartCtx.typeSelect.value : "bar";
   const labels = results.map((item) => normalizeLabel(item.label));
   const confidences = results.map((item) => Number((item.confidence * 100).toFixed(2)));
   const colors = labels.map((_, index) => chartPalette[index % chartPalette.length]);
-  latestResults = results;
-  syncCanvasSize();
-  resultChartCanvas.hidden = false;
 
-  if (chartFallback) {
-    chartFallback.hidden = true;
-    chartFallback.innerHTML = "";
+  syncCanvasSize(chartCtx);
+  chartCtx.canvas.hidden = false;
+
+  if (chartCtx.fallback) {
+    chartCtx.fallback.hidden = true;
+    chartCtx.fallback.innerHTML = "";
   }
 
-  if (resultChart) {
-    resultChart.destroy();
+  if (chartCtx.instance) {
+    chartCtx.instance.destroy();
   }
 
   try {
-    const ctx = resultChartCanvas.getContext("2d");
+    const ctx = chartCtx.canvas.getContext("2d");
     if (!ctx) {
-      throw new Error("2D-Kontext nicht verfuegbar");
+      throw new Error("2D-Kontext nicht verfügbar");
     }
 
-    resultChart = new Chart(resultChartCanvas, {
+    chartCtx.instance = new Chart(ctx, {
       type: chartType,
       data: {
         labels,
@@ -202,30 +272,39 @@ function renderChart(results) {
       },
       options: getChartOptions(chartType)
     });
-    setChartStatus("Diagramm erfolgreich aktualisiert.");
+    setChartStatus("Diagramm erfolgreich aktualisiert.", chartCtx);
   } catch (error) {
     console.error("Fehler beim Rendern des Diagramms:", error);
-    renderFallbackBars(results);
-    setChartStatus("Diagramm konnte nicht gerendert werden - Fallback-Balken aktiv.");
+    renderFallbackBars(results, chartCtx);
+    setChartStatus("Diagramm konnte nicht gerendert werden - Fallback-Balken aktiv.", chartCtx);
   }
 }
 
-if (chartTypeSelect) {
-  chartTypeSelect.addEventListener("change", () => {
+if (userChartCtx.typeSelect) {
+  userChartCtx.typeSelect.addEventListener("change", () => {
     if (latestResults.length === 0) {
       return;
     }
 
-    renderChart(latestResults);
+    renderChart(latestResults, userChartCtx);
+  });
+}
+
+if (exampleChartCtx.typeSelect) {
+  exampleChartCtx.typeSelect.addEventListener("change", () => {
+    if (latestExampleResults.length === 0) {
+      return;
+    }
+
+    renderChart(latestExampleResults, exampleChartCtx);
   });
 }
 
 window.addEventListener("resize", () => {
-  syncCanvasSize();
-
-  if (resultChart) {
-    resultChart.resize();
-  }
+  syncCanvasSize(userChartCtx);
+  syncCanvasSize(exampleChartCtx);
+  if (userChartCtx.instance) userChartCtx.instance.resize();
+  if (exampleChartCtx.instance) exampleChartCtx.instance.resize();
 });
 
 imageUpload.addEventListener("change", (event) => {
@@ -288,7 +367,7 @@ async function classifyImage() {
     labelText.textContent = "-";
     confidenceText.textContent = "-";
 
-    const results = await classifier.classify(previewImage);
+    const results = await classifyInput(previewImage);
     console.log("Klassifikationsergebnisse:", results);
 
     if (!results || results.length === 0) {
@@ -301,10 +380,49 @@ async function classifyImage() {
     statusText.textContent = "Klassifikation abgeschlossen.";
     labelText.textContent = bestResult.label;
     confidenceText.textContent = `${(bestResult.confidence * 100).toFixed(2)} %`;
-    renderChart(results);
+    latestResults = results;
+    renderChart(results, userChartCtx);
   } catch (error) {
     console.error("Fehler bei der Klassifikation:", error);
-    statusText.textContent = "Fehler bei der Klassifikation.";
+    const message = error?.message || "Unbekannter Fehler";
+    if (String(message).toLowerCase().includes("insecure")) {
+      statusText.textContent = "Fehler bei der Klassifikation: Bitte ueber http://localhost starten (nicht file://).";
+      return;
+    }
+    statusText.textContent = `Fehler bei der Klassifikation: ${message}`;
+  }
+}
+
+async function classifyExample() {
+  if (!exampleImage) {
+    return;
+  }
+
+  try {
+    exampleStatusText.textContent = "Bild wird klassifiziert...";
+    await ensureImageLoaded(exampleImage);
+    const results = await classifyInput(exampleImage);
+    console.log("Beispiel-Klassifikationsergebnisse:", results);
+
+    if (!results || results.length === 0) {
+      exampleStatusText.textContent = "Keine Ergebnisse erhalten.";
+      return;
+    }
+
+    const bestResult = results[0];
+    exampleStatusText.textContent = "Klassifikation abgeschlossen.";
+    exampleLabelText.textContent = bestResult.label;
+    exampleConfidenceText.textContent = `${(bestResult.confidence * 100).toFixed(2)} %`;
+    latestExampleResults = results;
+    renderChart(results, exampleChartCtx);
+  } catch (error) {
+    console.error("Fehler bei der Beispiel-Klassifikation:", error);
+    const message = error?.message || "Unbekannter Fehler";
+    if (String(message).toLowerCase().includes("insecure")) {
+      exampleStatusText.textContent = "Fehler bei der Klassifikation: Bitte ueber http://localhost starten (nicht file://).";
+      return;
+    }
+    exampleStatusText.textContent = `Fehler bei der Klassifikation: ${message}`;
   }
 }
 
