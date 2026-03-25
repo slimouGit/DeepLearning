@@ -18,6 +18,7 @@ const exampleImage          = document.getElementById("exampleImage");
 const exampleStatusText     = document.getElementById("exampleStatus");
 const exampleLabelText      = document.getElementById("exampleLabel");
 const exampleConfidenceText = document.getElementById("exampleConfidence");
+const exampleValidationText = document.getElementById("exampleValidation");
 
 // Chart context objects – each holds its own Canvas, fallback, status el, type select and chart instance
 const userChartCtx = {
@@ -50,6 +51,7 @@ const chartPalette = [
 ];
 
 const TOP_K = 5;
+const VALID_CONFIDENCE_THRESHOLD = 80;
 const isFileProtocol = window.location.protocol === "file:";
 
 if (window.Chart && window.ChartDataLabels) {
@@ -174,6 +176,54 @@ async function ensureImageLoaded(img) {
 
 function updateButtonState() {
   classifyButton.disabled = !(modelReady && imageReady);
+}
+
+function setExampleValidation(confidencePercent) {
+  if (!exampleValidationText) {
+    return;
+  }
+
+  exampleValidationText.classList.remove("neutral", "correct", "wrong");
+
+  if (typeof confidencePercent !== "number") {
+    exampleValidationText.classList.add("neutral");
+    exampleValidationText.innerHTML = `
+      <div class="eval-head">
+        <span class="eval-text">Noch nicht bewertet</span>
+        <span class="eval-score">-</span>
+      </div>
+      <div class="eval-meter">
+        <div class="eval-meter-fill" style="width: 0%"></div>
+      </div>
+    `;
+    return;
+  }
+
+  const meterWidth = Math.max(0, Math.min(confidencePercent, 100));
+
+  if (confidencePercent >= VALID_CONFIDENCE_THRESHOLD) {
+    exampleValidationText.classList.add("correct");
+    exampleValidationText.innerHTML = `
+      <div class="eval-head">
+        <span class="eval-text">Richtig klassifiziert</span>
+        <span class="eval-score">${confidencePercent.toFixed(2)} %</span>
+      </div>
+      <div class="eval-meter">
+        <div class="eval-meter-fill" style="width: ${meterWidth}%"></div>
+      </div>
+    `;
+  } else {
+    exampleValidationText.classList.add("wrong");
+    exampleValidationText.innerHTML = `
+      <div class="eval-head">
+        <span class="eval-text">Falsch klassifiziert</span>
+        <span class="eval-score">${confidencePercent.toFixed(2)} %</span>
+      </div>
+      <div class="eval-meter">
+        <div class="eval-meter-fill" style="width: ${meterWidth}%"></div>
+      </div>
+    `;
+  }
 }
 
 function normalizeLabel(label) {
@@ -410,9 +460,11 @@ async function classifyExample() {
     }
 
     const bestResult = results[0];
+    const confidencePercent = bestResult.confidence * 100;
     exampleStatusText.textContent = "Klassifikation abgeschlossen.";
     exampleLabelText.textContent = bestResult.label;
-    exampleConfidenceText.textContent = `${(bestResult.confidence * 100).toFixed(2)} %`;
+    exampleConfidenceText.textContent = `${confidencePercent.toFixed(2)} %`;
+    setExampleValidation(confidencePercent);
     latestExampleResults = results;
     renderChart(results, exampleChartCtx);
   } catch (error) {
@@ -420,9 +472,11 @@ async function classifyExample() {
     const message = error?.message || "Unbekannter Fehler";
     if (String(message).toLowerCase().includes("insecure")) {
       exampleStatusText.textContent = "Fehler bei der Klassifikation: Bitte ueber http://localhost starten (nicht file://).";
+      setExampleValidation();
       return;
     }
     exampleStatusText.textContent = `Fehler bei der Klassifikation: ${message}`;
+    setExampleValidation();
   }
 }
 
