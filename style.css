@@ -89,3 +89,45 @@ button:disabled {
 .result p {
   margin: 8px 0;
 }
+
+.chart-section {
+  margin-top: 20px;
+  background: #f8fafc;
+  border: 1px solid #e4e7eb;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.chart-header h2 {
+  margin: 0;
+  font-size: 18px;
+  margin-right: auto;
+}
+
+#chartType {
+  padding: 8px 10px;
+  border: 1px solid #cbd2d9;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2933;
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 340px;
+}
+
+@media (max-width: 600px) {
+  .chart-wrapper {
+    min-height: 280px;
+  }
+}
