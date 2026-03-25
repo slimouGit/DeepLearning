@@ -48,6 +48,28 @@ h1 {
   color: var(--md-sys-color-on-surface-variant);
 }
 
+.threshold-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.threshold-control label {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.95rem;
+}
+
+#confidenceThresholdSelect {
+  padding: 8px 10px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--md-sys-color-on-surface);
+  min-height: 40px;
+}
+
 .example-list {
   display: grid;
   gap: 16px;

@@ -10,6 +10,7 @@ const classifyButton = document.getElementById("classifyButton");
 const statusText = document.getElementById("status");
 const labelText = document.getElementById("label");
 const confidenceText = document.getElementById("confidence");
+const confidenceThresholdSelect = document.getElementById("confidenceThresholdSelect");
 
 const examplesContainer = document.getElementById("examplesContainer");
 const exampleTemplate = document.getElementById("exampleCardTemplate");
@@ -39,12 +40,12 @@ const examplesConfig = [
   { title: "Beispiel 1", imagePath: "images/banana.png", alt: "Beispielbild: Bananen" },
   { title: "Beispiel 2", imagePath: "images/apple.jpg", alt: "Beispielbild: Äpfel" },
   { title: "Beispiel 3", imagePath: "images/firetruck.jpg", alt: "Beispielbild: Feuerwehrauto" },
-  { title: "Beispiel 4", imagePath: "images/cheeshat.png", alt: "Beispielbild: Cheesehat" }
+  { title: "Beispiel ", imagePath: "images/cheeshat.png", alt: "Beispielbild: Cheesehat" }
 ];
 
 const exampleCards = [];
 const TOP_K = 5;
-const VALID_CONFIDENCE_THRESHOLD = 50;
+let validConfidenceThreshold = 70;
 const isFileProtocol = window.location.protocol === "file:";
 
 if (window.Chart && window.ChartDataLabels) {
@@ -330,7 +331,7 @@ function setExampleValidation(validationEl, confidencePercent) {
 
   const meterWidth = Math.max(0, Math.min(confidencePercent, 100));
 
-  if (confidencePercent >= VALID_CONFIDENCE_THRESHOLD) {
+  if (confidencePercent >= validConfidenceThreshold) {
     validationEl.classList.add("correct");
     validationEl.innerHTML = `
       <div class="eval-head">
@@ -352,6 +353,16 @@ function setExampleValidation(validationEl, confidencePercent) {
         <div class="eval-meter-fill" style="width: ${meterWidth}%"></div>
       </div>
     `;
+  }
+}
+
+async function reclassifyAllExamples() {
+  if (!modelReady || !classifier) {
+    return;
+  }
+
+  for (const card of exampleCards) {
+    await classifyExampleCard(card);
   }
 }
 
@@ -603,4 +614,15 @@ async function classifyExampleCard(card) {
 }
 
 buildExampleCards();
+
+if (confidenceThresholdSelect) {
+  confidenceThresholdSelect.value = "70";
+  validConfidenceThreshold = 70;
+  confidenceThresholdSelect.addEventListener("change", async () => {
+    const nextValue = Number(confidenceThresholdSelect.value);
+    validConfidenceThreshold = Number.isNaN(nextValue) ? 70 : nextValue;
+    await reclassifyAllExamples();
+  });
+}
+
 init();
