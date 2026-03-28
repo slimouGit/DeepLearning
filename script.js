@@ -11,6 +11,7 @@ const statusText = document.getElementById("status");
 const labelText = document.getElementById("label");
 const confidenceText = document.getElementById("confidence");
 const confidenceThresholdSelect = document.getElementById("confidenceThresholdSelect");
+const examplesFixedHeader = document.getElementById("examplesFixedHeader");
 
 const examplesContainer = document.getElementById("examplesContainer");
 const exampleTemplate = document.getElementById("exampleCardTemplate");
@@ -106,6 +107,17 @@ function buildExampleCards() {
     examplesContainer.appendChild(card);
     exampleCards.push(state);
   });
+}
+
+function syncFixedHeaderOffset() {
+  if (!examplesFixedHeader) {
+    document.body.style.setProperty("--examples-header-height", "0px");
+    return;
+  }
+
+  const headerHeight = examplesFixedHeader.getBoundingClientRect().height;
+  const headerGap = 16;
+  document.body.style.setProperty("--examples-header-height", `${Math.ceil(headerHeight + headerGap)}px`);
 }
 
 function syncCanvasSize(chartCtx) {
@@ -480,6 +492,7 @@ if (userChartCtx.typeSelect) {
 }
 
 window.addEventListener("resize", () => {
+  syncFixedHeaderOffset();
   syncCanvasSize(userChartCtx);
   if (userChartCtx.instance) {
     userChartCtx.instance.resize();
@@ -614,6 +627,14 @@ async function classifyExampleCard(card) {
 }
 
 buildExampleCards();
+syncFixedHeaderOffset();
+
+if (window.ResizeObserver && examplesFixedHeader) {
+  const fixedHeaderObserver = new ResizeObserver(() => {
+    syncFixedHeaderOffset();
+  });
+  fixedHeaderObserver.observe(examplesFixedHeader);
+}
 
 if (confidenceThresholdSelect) {
   confidenceThresholdSelect.value = "70";
