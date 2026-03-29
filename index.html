@@ -18,9 +18,12 @@
     <div id="examplesFixedHeader" class="examples-fixed-header">
       <h1>Bilderkennung mit ml5</h1>
       <p><a href="https://docs.ml5js.org/#/">ml5.js Dokumentation</a></p>
+    </div>
 
-      <h2 class="section-heading">Beispiele</h2>
-      <div class="threshold-control">
+    <section class="examples-section" aria-labelledby="examplesHeading">
+      <h2 id="examplesHeading" class="section-heading">Beispiele</h2>
+      <p class="hint">Lege fest, ab welcher Mindest-Confidence eine Beispielklassifikation als richtig oder falsch bewertet wird.</p>
+      <div class="threshold-control examples-threshold-control">
         <label for="confidenceThresholdSelect">
           Mindest-Confidence fuer die Bewertung (richtig/falsch):
         </label>
@@ -36,8 +39,9 @@
           <option value="90">90 %</option>
         </select>
       </div>
-    </div>
-    <div id="examplesContainer" class="example-list"></div>
+
+      <div id="examplesContainer" class="example-list"></div>
+    </section>
 
     
 
