@@ -12,6 +12,10 @@ const labelText = document.getElementById("label");
 const confidenceText = document.getElementById("confidence");
 const confidenceThresholdSelect = document.getElementById("confidenceThresholdSelect");
 const examplesFixedHeader = document.getElementById("examplesFixedHeader");
+const navToggle = document.getElementById("navToggle");
+const headerNav = document.getElementById("headerNav");
+const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+const toTopButton = document.getElementById("toTopButton");
 
 const examplesContainer = document.getElementById("examplesContainer");
 const exampleTemplate = document.getElementById("exampleCardTemplate");
@@ -51,6 +55,103 @@ const isFileProtocol = window.location.protocol === "file:";
 
 if (window.Chart && window.ChartDataLabels) {
   Chart.register(ChartDataLabels);
+}
+
+function setMobileNavigationState(isOpen) {
+  if (!navToggle || !headerNav) {
+    return;
+  }
+
+  const shouldOpen = Boolean(isOpen);
+  navToggle.setAttribute("aria-expanded", String(shouldOpen));
+  navToggle.setAttribute("aria-label", shouldOpen ? "Navigation schließen" : "Navigation öffnen");
+  headerNav.classList.toggle("is-open", shouldOpen);
+  syncFixedHeaderOffset();
+}
+
+function scrollToSection(targetId) {
+  const targetElement = document.getElementById(targetId);
+  if (!targetElement) {
+    return;
+  }
+
+  const headerHeight = examplesFixedHeader?.getBoundingClientRect().height || 0;
+  const targetTop = targetElement.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+
+  window.scrollTo({
+    top: Math.max(targetTop, 0),
+    behavior: "smooth"
+  });
+}
+
+function updateScrollControls() {
+  if (toTopButton) {
+    toTopButton.classList.toggle("is-visible", window.scrollY > 180);
+  }
+}
+
+function handleNavigationLinkClick(event) {
+  const href = event.currentTarget.getAttribute("href");
+  if (!href || !href.startsWith("#")) {
+    return;
+  }
+
+  event.preventDefault();
+  scrollToSection(href.slice(1));
+  setMobileNavigationState(false);
+}
+
+function setupNavigation() {
+  navLinks.forEach((link) => {
+    link.addEventListener("click", handleNavigationLinkClick);
+  });
+
+  if (navToggle) {
+    navToggle.addEventListener("click", () => {
+      const isExpanded = navToggle.getAttribute("aria-expanded") === "true";
+      setMobileNavigationState(!isExpanded);
+    });
+  }
+
+  if (toTopButton) {
+    toTopButton.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!navToggle || !headerNav || window.innerWidth > 760) {
+      return;
+    }
+
+    const clickTarget = event.target;
+    if (!(clickTarget instanceof Node)) {
+      return;
+    }
+
+    if (examplesFixedHeader?.contains(clickTarget)) {
+      return;
+    }
+
+    setMobileNavigationState(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setMobileNavigationState(false);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) {
+      setMobileNavigationState(false);
+    }
+  });
+
+  window.addEventListener("scroll", updateScrollControls, { passive: true });
+
+  setMobileNavigationState(false);
+  updateScrollControls();
 }
 
 function buildExampleCards() {
@@ -627,6 +728,7 @@ async function classifyExampleCard(card) {
 }
 
 buildExampleCards();
+setupNavigation();
 syncFixedHeaderOffset();
 
 if (window.ResizeObserver && examplesFixedHeader) {

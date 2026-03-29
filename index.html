@@ -16,8 +16,30 @@
 <body>
   <main class="container">
     <div id="examplesFixedHeader" class="examples-fixed-header">
-      <h1>Bilderkennung mit ml5</h1>
-      <p><a href="https://docs.ml5js.org/#/">ml5.js Dokumentation</a></p>
+      <div class="header-main">
+        <div class="header-brand">
+          <h1>Bilderkennung mit ml5</h1>
+          <p><a href="https://docs.ml5js.org/#/">ml5.js Dokumentation</a></p>
+        </div>
+        <button
+          id="navToggle"
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="headerNav"
+          aria-label="Navigation öffnen"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+      <nav id="headerNav" class="header-nav" aria-label="Bereichsnavigation">
+        <a class="nav-link" href="#examplesHeading">Beispiele</a>
+        <a class="nav-link" href="#userImageHeading">Eigenes Bild klassifizieren</a>
+        <a class="nav-link" href="#discussionHeading">Diskussion</a>
+        <a class="nav-link" href="#documentationHeading">Dokumentation</a>
+      </nav>
     </div>
 
     <section class="examples-section" aria-labelledby="examplesHeading">
@@ -45,7 +67,7 @@
 
     
 
-    <h2 class="section-heading">Eigenes Bild klassifizieren</h2>
+    <h2 id="userImageHeading" class="section-heading">Eigenes Bild klassifizieren</h2>
     <p class="hint">Wähle ein Bild aus. Die Klassifikation wird erst nach Klick auf den Button gestartet.</p>
 
     <div class="card layout-grid">
@@ -94,7 +116,7 @@
       </section>
     </div>
 
-    <h2 class="section-heading">Diskussion</h2>
+    <h2 id="discussionHeading" class="section-heading">Diskussion</h2>
     <section class="card content-card">
       <p>
         Bei klaren, gut ausgeleuchteten Bildern mit einem einzelnen Hauptmotiv hat die Klassifikation insgesamt am besten funktioniert.
@@ -110,7 +132,7 @@
       </p>
     </section>
 
-    <h2 class="section-heading">Dokumentation</h2>
+    <h2 id="documentationHeading" class="section-heading">Dokumentation</h2>
     <section class="card content-card">
       <h3>1) Technisch</h3>
       <ul class="content-list">
@@ -131,6 +153,10 @@
       </p>
     </section>
   </main>
+
+  <button id="toTopButton" class="to-top-button" type="button" aria-label="Nach oben scrollen">
+    Nach oben
+  </button>
 
   <template id="exampleCardTemplate">
     <div class="card layout-grid example-card">
