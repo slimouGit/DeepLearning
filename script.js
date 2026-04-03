@@ -42,10 +42,12 @@ const chartPalette = [
 ];
 
 const examplesConfig = [
-  { title: "Beispiel 1", imagePath: "images/banana.png", alt: "Beispielbild: Bananen" },
-  { title: "Beispiel 2", imagePath: "images/apple.jpg", alt: "Beispielbild: Äpfel" },
-  { title: "Beispiel 3", imagePath: "images/firetruck.jpg", alt: "Beispielbild: Feuerwehrauto" },
-  { title: "Beispiel ", imagePath: "images/cheeshat.png", alt: "Beispielbild: Cheesehat" }
+  { title: "Beispiel 1", imagePath: "images/Banana.png", alt: "Beispielbild: Bananen" },
+  { title: "Beispiel 2", imagePath: "images/GoldenRedriewer.png", alt: "Beispielbild: GoldenRedriewer" },
+  { title: "Beispiel 3", imagePath: "images/Pizza.png", alt: "Beispielbild: Pizza" },
+  { title: "Beispiel ", imagePath: "images/Cat.png", alt: "Beispielbild: Katze" },
+  { title: "Beispiel ", imagePath: "images/Painting.png", alt: "Beispielbild: Wasserfarben  " },
+  { title: "Beispiel ", imagePath: "images/Towel.png", alt: "Beispielbild: Handtuch" }
 ];
 
 const exampleCards = [];
