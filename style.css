@@ -290,6 +290,10 @@ h1 {
   text-align: left;
 }
 
+#userImageEvaluation {
+  margin-bottom: 20px;
+}
+
 .classification-eval.neutral {
   background: #e0e0e0 !important;
   color: #444444;

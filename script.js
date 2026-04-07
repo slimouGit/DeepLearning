@@ -7,6 +7,7 @@ const imageUpload = document.getElementById("imageUpload");
 const previewImage = document.getElementById("previewImage");
 const placeholder = document.getElementById("placeholder");
 const uploadDropzone = document.getElementById("uploadDropzone");
+const userImageEvaluation = document.getElementById("userImageEvaluation");
 const classifyButton = document.getElementById("classifyButton");
 const statusText = document.getElementById("status");
 const labelText = document.getElementById("label");
@@ -199,7 +200,7 @@ function buildExampleCards() {
       }
     };
 
-    setExampleValidation(state.validationEl);
+    setConfidenceEvaluation(state.validationEl);
 
     chartTypeSelect.addEventListener("change", () => {
       if (state.latestResults.length === 0) {
@@ -281,7 +282,7 @@ async function init() {
       exampleCards.forEach((card) => {
         card.statusEl.textContent = fileProtocolMessage;
         setChartStatus("Kein Chart-Update im file://-Modus.", card.chartCtx);
-        setExampleValidation(card.validationEl);
+        setConfidenceEvaluation(card.validationEl);
       });
       return;
     }
@@ -305,7 +306,7 @@ async function init() {
     statusText.textContent = `Fehler beim Laden des Modells: ${message}`;
     exampleCards.forEach((card) => {
       card.statusEl.textContent = `Fehler beim Laden des Modells: ${message}`;
-      setExampleValidation(card.validationEl);
+      setConfidenceEvaluation(card.validationEl);
     });
   }
 }
@@ -431,7 +432,9 @@ function resetUploadedImageState() {
   previewImage.hidden = true;
   previewImage.removeAttribute("src");
   placeholder.hidden = false;
+  userImageEvaluation.hidden = true;
   latestResults = [];
+  setConfidenceEvaluation(userImageEvaluation);
   updateButtonState();
 }
 
@@ -590,7 +593,7 @@ function setupUploadDropzone() {
   });
 }
 
-function setExampleValidation(validationEl, confidencePercent) {
+function setConfidenceEvaluation(validationEl, confidencePercent) {
   if (!validationEl) {
     return;
   }
@@ -641,6 +644,11 @@ function setExampleValidation(validationEl, confidencePercent) {
 async function reclassifyAllExamples() {
   if (!modelReady || !classifier) {
     return;
+  }
+
+  if (latestResults.length > 0) {
+    userImageEvaluation.hidden = false;
+    setConfidenceEvaluation(userImageEvaluation, latestResults[0].confidence * 100);
   }
 
   for (const card of exampleCards) {
@@ -797,13 +805,18 @@ async function classifyImage() {
     const results = await classifyInput(previewImage);
     if (!results || results.length === 0) {
       statusText.textContent = "Keine Ergebnisse erhalten.";
+      userImageEvaluation.hidden = true;
+      setConfidenceEvaluation(userImageEvaluation);
       return;
     }
 
     const bestResult = results[0];
+    const confidencePercent = bestResult.confidence * 100;
     statusText.textContent = "Klassifikation abgeschlossen.";
     labelText.textContent = bestResult.label;
-    confidenceText.textContent = `${(bestResult.confidence * 100).toFixed(2)} %`;
+    confidenceText.textContent = `${confidencePercent.toFixed(2)} %`;
+    userImageEvaluation.hidden = false;
+    setConfidenceEvaluation(userImageEvaluation, confidencePercent);
     latestResults = results;
     renderChart(results, userChartCtx);
   } catch (error) {
@@ -829,7 +842,7 @@ async function classifyExampleCard(card) {
 
     if (!results || results.length === 0) {
       card.statusEl.textContent = "Keine Ergebnisse erhalten.";
-      setExampleValidation(card.validationEl);
+      setConfidenceEvaluation(card.validationEl);
       return;
     }
 
@@ -838,7 +851,7 @@ async function classifyExampleCard(card) {
     card.statusEl.textContent = "Klassifikation abgeschlossen.";
     card.labelEl.textContent = bestResult.label;
     card.confidenceEl.textContent = `${confidencePercent.toFixed(2)} %`;
-    setExampleValidation(card.validationEl, confidencePercent);
+    setConfidenceEvaluation(card.validationEl, confidencePercent);
     card.latestResults = results;
     renderChart(results, card.chartCtx);
   } catch (error) {
@@ -846,17 +859,19 @@ async function classifyExampleCard(card) {
     const message = error?.message || "Unbekannter Fehler";
     if (String(message).toLowerCase().includes("insecure")) {
       card.statusEl.textContent = "Fehler bei der Klassifikation: Bitte ueber http://localhost starten (nicht file://).";
-      setExampleValidation(card.validationEl);
+      setConfidenceEvaluation(card.validationEl);
       return;
     }
     card.statusEl.textContent = `Fehler bei der Klassifikation: ${message}`;
-    setExampleValidation(card.validationEl);
+    setConfidenceEvaluation(card.validationEl);
   }
 }
 
 buildExampleCards();
 setupNavigation();
 setupUploadDropzone();
+userImageEvaluation.hidden = true;
+setConfidenceEvaluation(userImageEvaluation);
 syncFixedHeaderOffset();
 
 if (window.ResizeObserver && examplesFixedHeader) {
