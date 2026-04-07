@@ -78,9 +78,18 @@
           accept="image/jpeg,image/png,image/webp"
         />
 
-        <div class="image-wrapper">
+        <div
+          id="uploadDropzone"
+          class="image-wrapper upload-dropzone"
+          role="button"
+          tabindex="0"
+          aria-label="Bild hierher ziehen oder per Dateiauswahl hochladen"
+        >
           <img id="previewImage" alt="Vorschau" hidden />
-          <div id="placeholder">Noch kein Bild ausgewählt</div>
+          <div id="placeholder">
+            <strong>Noch kein Bild ausgewählt</strong><br />
+            Bild hierher ziehen und ablegen oder oben über die Dateiauswahl laden
+          </div>
         </div>
 
         <div class="button-row">
