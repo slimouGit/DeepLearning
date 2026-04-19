@@ -9,6 +9,10 @@ const previewImage = document.getElementById("previewImage");
 const placeholder = document.getElementById("placeholder");
 const uploadDropzone = document.getElementById("uploadDropzone");
 const userImageEvaluation = document.getElementById("userImageEvaluation");
+<<<<<<< HEAD
+=======
+const classifyButton = document.getElementById("classifyButton");
+>>>>>>> 7e9bc6b8d55441d5bcaf34bdc40f3053cbc36a78
 const statusText = document.getElementById("status");
 const labelText = document.getElementById("label");
 const confidenceText = document.getElementById("confidence");
@@ -276,6 +280,10 @@ async function init() {
     if (isFileProtocol) {
       const fileProtocolMessage = "Bitte ueber lokalen Server starten (http://localhost), nicht per file://.";
       statusText.textContent = fileProtocolMessage;
+<<<<<<< HEAD
+=======
+      classifyButton.disabled = true;
+>>>>>>> 7e9bc6b8d55441d5bcaf34bdc40f3053cbc36a78
       setChartStatus("Kein Chart-Update im file://-Modus.", userChartCtx);
 
       exampleCards.forEach((card) => {
@@ -293,6 +301,7 @@ async function init() {
 
     classifier = await createClassifier();
     modelReady = true;
+<<<<<<< HEAD
     statusText.textContent = imageReady
       ? "Modell geladen. Starte Klassifikation..."
       : "Modell geladen. Bitte Bild auswählen.";
@@ -300,6 +309,10 @@ async function init() {
     if (imageReady) {
       await classifyImage();
     }
+=======
+    statusText.textContent = "Modell geladen. Bitte Bild auswählen.";
+    updateButtonState();
+>>>>>>> 7e9bc6b8d55441d5bcaf34bdc40f3053cbc36a78
 
     for (const card of exampleCards) {
       await classifyExampleCard(card);
@@ -425,6 +438,7 @@ async function ensureImageLoaded(img) {
   });
 }
 
+<<<<<<< HEAD
 function resetUploadedImageState() {
   if (uploadedImageObjectUrl) {
     URL.revokeObjectURL(uploadedImageObjectUrl);
@@ -517,6 +531,241 @@ function loadSelectedImage(file) {
   };
 
   previewImage.src = uploadedImageObjectUrl;
+}
+
+function getFirstDroppedFile(dataTransfer) {
+  if (!dataTransfer) {
+    return null;
+  }
+
+  if (dataTransfer.items?.length) {
+    for (const item of dataTransfer.items) {
+      if (item.kind === "file") {
+        return item.getAsFile();
+      }
+    }
+  }
+
+  return dataTransfer.files?.[0] || null;
+}
+
+function setupUploadDropzone() {
+  if (!uploadDropzone || !imageUpload) {
+    return;
+  }
+
+  const preventDefaults = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+    uploadDropzone.addEventListener(eventName, preventDefaults);
+  });
+
+  ["dragenter", "dragover", "drop"].forEach((eventName) => {
+    document.addEventListener(eventName, preventDefaults);
+  });
+
+  uploadDropzone.addEventListener("dragenter", (event) => {
+    const hasFiles = Array.from(event.dataTransfer?.types || []).includes("Files");
+    setDropzoneState(hasFiles ? "active" : "invalid");
+  });
+
+  uploadDropzone.addEventListener("dragover", (event) => {
+    const droppedFile = getFirstDroppedFile(event.dataTransfer);
+    const hasFiles = Array.from(event.dataTransfer?.types || []).includes("Files");
+    const isValid = droppedFile ? isAllowedImageFile(droppedFile) : hasFiles;
+
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = isValid ? "copy" : "none";
+    }
+
+    setDropzoneState(isValid ? "active" : "invalid");
+  });
+
+  uploadDropzone.addEventListener("dragleave", (event) => {
+    if (event.relatedTarget instanceof Node && uploadDropzone.contains(event.relatedTarget)) {
+      return;
+    }
+
+    setDropzoneState();
+  });
+
+  uploadDropzone.addEventListener("drop", (event) => {
+    const file = getFirstDroppedFile(event.dataTransfer);
+    setDropzoneState();
+
+    if (imageUpload) {
+      imageUpload.value = "";
+    }
+
+    loadSelectedImage(file);
+  });
+
+  uploadDropzone.addEventListener("click", () => {
+    imageUpload.click();
+  });
+
+  uploadDropzone.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    imageUpload.click();
+  });
+}
+
+function setConfidenceEvaluation(validationEl, confidencePercent) {
+  if (!validationEl) {
+    return;
+  }
+
+  validationEl.classList.remove("neutral", "correct", "wrong");
+
+  if (typeof confidencePercent !== "number") {
+    validationEl.classList.add("neutral");
+    validationEl.innerHTML = `
+      <div class="eval-head">
+        <span class="eval-text">Noch nicht bewertet</span>
+        <span class="eval-score">-</span>
+      </div>
+      <div class="eval-meter">
+        <div class="eval-meter-fill" style="width: 0%"></div>
+      </div>
+    `;
+    return;
+  }
+
+  const meterWidth = Math.max(0, Math.min(confidencePercent, 100));
+
+  if (confidencePercent >= validConfidenceThreshold) {
+    validationEl.classList.add("correct");
+    validationEl.innerHTML = `
+      <div class="eval-head">
+        <span class="eval-text">Richtig klassifiziert</span>
+        <span class="eval-score">${confidencePercent.toFixed(2)} %</span>
+      </div>
+      <div class="eval-meter">
+        <div class="eval-meter-fill" style="width: ${meterWidth}%"></div>
+      </div>
+    `;
+  } else {
+    validationEl.classList.add("wrong");
+    validationEl.innerHTML = `
+      <div class="eval-head">
+        <span class="eval-text">Falsch klassifiziert</span>
+        <span class="eval-score">${confidencePercent.toFixed(2)} %</span>
+      </div>
+      <div class="eval-meter">
+        <div class="eval-meter-fill" style="width: ${meterWidth}%"></div>
+      </div>
+    `;
+  }
+}
+
+async function reclassifyAllExamples() {
+  if (!modelReady || !classifier) {
+    return;
+  }
+
+  if (latestResults.length > 0) {
+    userImageEvaluation.hidden = false;
+    setConfidenceEvaluation(userImageEvaluation, latestResults[0].confidence * 100);
+  }
+
+  for (const card of exampleCards) {
+    await classifyExampleCard(card);
+  }
+=======
+function updateButtonState() {
+  classifyButton.disabled = !(modelReady && imageReady);
+>>>>>>> 7e9bc6b8d55441d5bcaf34bdc40f3053cbc36a78
+}
+
+function resetUploadedImageState() {
+  imageReady = false;
+  labelText.textContent = "-";
+  confidenceText.textContent = "-";
+  previewImage.hidden = true;
+  previewImage.removeAttribute("src");
+  placeholder.hidden = false;
+  userImageEvaluation.hidden = true;
+  latestResults = [];
+  setConfidenceEvaluation(userImageEvaluation);
+  updateButtonState();
+}
+
+function isAllowedImageFile(file) {
+  if (!file) {
+    return false;
+  }
+
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  const lowerCaseName = typeof file.name === "string" ? file.name.toLowerCase() : "";
+  const hasAllowedExtension = [".jpg", ".jpeg", ".png", ".webp"].some((extension) =>
+    lowerCaseName.endsWith(extension)
+  );
+
+  return allowedTypes.includes(file.type) || (!file.type && hasAllowedExtension);
+}
+
+function setDropzoneState(nextState) {
+  if (!uploadDropzone) {
+    return;
+  }
+
+  uploadDropzone.classList.remove("is-drag-active", "is-drag-invalid");
+
+  if (nextState === "active") {
+    uploadDropzone.classList.add("is-drag-active");
+  }
+
+  if (nextState === "invalid") {
+    uploadDropzone.classList.add("is-drag-invalid");
+  }
+}
+
+function loadSelectedImage(file) {
+  resetUploadedImageState();
+
+  if (!file) {
+    statusText.textContent = modelReady
+      ? "Bitte Bild auswählen."
+      : "Modell wird geladen...";
+    return;
+  }
+
+  if (!isAllowedImageFile(file)) {
+    statusText.textContent = "Ungültiges Dateiformat. Bitte JPG, PNG oder WEBP verwenden.";
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    previewImage.onload = () => {
+      previewImage.hidden = false;
+      placeholder.hidden = true;
+      imageReady = true;
+      statusText.textContent = modelReady
+        ? "Bild geladen. Klassifikation kann gestartet werden."
+        : "Bild geladen. Modell wird noch geladen...";
+      updateButtonState();
+    };
+
+    previewImage.src = event.target.result;
+  };
+
+  reader.onerror = () => {
+    console.error("Fehler beim Einlesen der Datei.");
+    statusText.textContent = "Fehler beim Laden des Bildes.";
+    imageReady = false;
+    updateButtonState();
+  };
+
+  reader.readAsDataURL(file);
 }
 
 function getFirstDroppedFile(dataTransfer) {
