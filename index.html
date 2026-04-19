@@ -127,16 +127,13 @@
     <h2 id="discussionHeading" class="section-heading">Diskussion</h2>
     <section class="card content-card">
       <p>
-        Bei klaren, gut ausgeleuchteten Bildern mit einem einzelnen Hauptmotiv hat die Klassifikation insgesamt am besten funktioniert.
-        Besonders typische Objekte wie Tiere oder Alltagsgegenstaende wurden oft mit einer hohen Confidence erkannt.
-        Schwieriger wurde es bei Bildern mit unruhigem Hintergrund, ungewohnten Perspektiven oder mehreren Objekten gleichzeitig.
-        Dabei war auffaellig, dass das Modell manchmal eher Texturen und Farbverteilungen als das eigentliche Motiv bewertet.
-        Unscharfe oder sehr kleine Bildausschnitte fuehrten haeufig zu ungenauen oder wechselnden Ergebnissen.
-        Auch Zeichnungen, stilisierte Darstellungen oder stark bearbeitete Fotos wurden nicht immer passend eingeordnet.
-        Daraus laesst sich ableiten, dass das Modell besonders gut mit Motiven arbeitet, die den Trainingsdaten aehneln.
-        Ich habe ausserdem gelernt, dass eine hohe Confidence nicht automatisch bedeutet, dass die Vorhersage fachlich korrekt ist.
-        Fuer eine vernuenftige Bewertung sollte man deshalb immer auch den Bildkontext und alternative Treffer betrachten.
-        Insgesamt zeigt die Anwendung gut, wie leistungsfaehig vortrainierte Modelle sind, aber auch, wo ihre Grenzen im praktischen Einsatz liegen.
+        Die Ergebnisse sind am besten, wenn ein Motiv klar zu sehen ist und das Bild gut beleuchtet ist.
+        Bei typischen Motiven wie Tieren oder Essen passt die Erkennung oft gut.
+        Schwerer wird es bei unruhigem Hintergrund, mehreren Objekten oder ungewohnten Blickwinkeln.
+        Dann schwankt die Confidence teilweise deutlich.
+        Man sieht dabei gut: Eine hohe Confidence ist hilfreich, aber nicht automatisch gleichbedeutend mit "inhaltlich richtig".
+        Praktisch ist die Mindest-Confidence-Einstellung, weil man damit schnell testen kann, wie streng die Bewertung sein soll.
+        So laesst sich das Verhalten des Modells mit denselben Bildern in mehreren Varianten vergleichen.
       </p>
     </section>
 
@@ -144,20 +141,23 @@
     <section class="card content-card">
       <h3>1) Technisch</h3>
       <ul class="content-list">
-        <li><strong>ml5.js:</strong> Dieses Framework wird fuer die Bildklassifikation verwendet und stellt ein einfach nutzbares Interface fuer vortrainierte Machine-Learning-Modelle im Browser bereit.</li>
-        <li><strong>Chart.js:</strong> Damit werden die Klassifikationsergebnisse als Diagramm visualisiert, sodass die Confidence-Werte schnell verglichen werden koennen.</li>
-        <li><strong>chartjs-plugin-datalabels:</strong> Das Plugin ergaenzt die Diagramme um direkt sichtbare Prozentwerte und verbessert dadurch die Lesbarkeit.</li>
-        <li><strong>Technische Besonderheiten:</strong> Die Loesung arbeitet komplett clientseitig, benoetigt also kein Backend. Zusaetzlich werden Beispielbilder automatisch ausgewertet und ueber eine konfigurierbare Confidence-Schwelle als richtig oder falsch bewertet.</li>
+        <li><strong>ml5.js:</strong> Wird fuer die Bildklassifikation im Browser verwendet.</li>
+        <li><strong>Chart.js + chartjs-plugin-datalabels:</strong> Zeigt die Top-Treffer als Diagramm mit Prozentwerten an.</li>
+        <li><strong>Eigenes Bild:</strong> Nach Upload oder Drag-and-Drop startet die Klassifikation automatisch. Ein separater Start-Button ist nicht mehr noetig.</li>
+        <li><strong>Mindest-Confidence:</strong> Die Grenze ist konfigurierbar, Standard ist 70 %. Damit kann das Modell bewusst "strenger" oder "lockerer" getestet werden.</li>
+        <li><strong>Responsive Umsetzung:</strong> Das Layout passt sich an kleine und grosse Bildschirme an (Desktop, Mobile).</li>
+        <li><strong>Ohne Backend:</strong> Die Anwendung laeuft komplett clientseitig im Browser.</li>
       </ul>
 
       <h3>2) Fachlich</h3>
       <p>
-        Der Ansatz besteht darin, ein vortrainiertes Bildklassifikationsmodell im Browser zu laden und sowohl Nutzerbilder als auch vorbereitete Beispielbilder damit auszuwerten.
-        Die Logik trennt klar zwischen Bildauswahl, Klassifikation, Ergebnisanzeige und Visualisierung der Wahrscheinlichkeiten.
-        Fuer die fachliche Bewertung der Beispiele wird das erkannte Label mit einer erwarteten Kategorie verglichen und zusaetzlich ueber eine Confidence-Schwelle abgesichert.
-        So laesst sich nicht nur erkennen, welches Label das Modell bevorzugt, sondern auch, wie sicher diese Entscheidung ausfaellt.
-        Die bisherigen Resultate deuten darauf hin, dass standardisierte und eindeutige Motive besser funktionieren als komplexe oder ungewoehnliche Bildsituationen.
-        Als Quellen wurden die Dokumentation von ml5.js sowie die Dokumentation von Chart.js fuer die Diagrammdarstellung verwendet.
+        Fachlich geht es darum, die Staerken und Grenzen eines vortrainierten Modells sichtbar zu machen.
+        Dafuer werden Beispielbilder und eigene Bilder gleich ausgewertet und direkt mit Confidence angezeigt.
+        Beim eigenen Bild startet die Klassifikation direkt nach Upload oder Drag-and-Drop, also ohne weitere Nutzerinteraktion.
+        Die Mindest-Confidence hilft bei der Einordnung: Mit 70 % als Default startet die Bewertung in einer sinnvollen Mitte,
+        kann aber jederzeit angepasst werden, um das Modell genauer zu untersuchen.
+        Durch das responsive Layout bleibt die Nutzung auf Desktop und Smartphone gleich gut bedienbar.
+        Insgesamt zeigt die Anwendung gut, dass klare und typische Motive meist besser erkannt werden als komplexe oder ungewoehnliche Bildsituationen.
       </p>
     </section>
   </main>
