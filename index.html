@@ -15,10 +15,60 @@
 </head>
 <body>
   <main class="container">
-    <h1>Bilderkennung mit ml5</h1>
-    <p class="hint">
-      Wähle ein Bild aus. Die Klassifikation wird erst nach Klick auf den Button gestartet.
-    </p>
+    <div id="examplesFixedHeader" class="examples-fixed-header">
+      <div class="header-main">
+        <div class="header-brand">
+          <h1>Bilderkennung mit ml5</h1>
+          <p><a href="https://docs.ml5js.org/#/">ml5.js Dokumentation</a></p>
+        </div>
+        <button
+          id="navToggle"
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="headerNav"
+          aria-label="Navigation öffnen"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+      <nav id="headerNav" class="header-nav" aria-label="Bereichsnavigation">
+        <a class="nav-link" href="#examplesHeading">Beispiele</a>
+        <a class="nav-link" href="#userImageHeading">Eigenes Bild klassifizieren</a>
+        <a class="nav-link" href="#discussionHeading">Diskussion</a>
+        <a class="nav-link" href="#documentationHeading">Dokumentation</a>
+      </nav>
+    </div>
+
+    <section class="examples-section" aria-labelledby="examplesHeading">
+      <h2 id="examplesHeading" class="section-heading">Beispiele</h2>
+      <p class="hint">Lege fest, ab welcher Mindest-Confidence eine Beispielklassifikation als richtig oder falsch bewertet wird.</p>
+      <div class="threshold-control examples-threshold-control">
+        <label for="confidenceThresholdSelect">
+          Mindest-Confidence fuer die Bewertung (richtig/falsch):
+        </label>
+        <select id="confidenceThresholdSelect" aria-label="Mindest-Confidence fuer die Bewertung">
+          <option value="10">10 %</option>
+          <option value="20">20 %</option>
+          <option value="30">30 %</option>
+          <option value="40">40 %</option>
+          <option value="50">50 %</option>
+          <option value="60">60 %</option>
+          <option value="70" selected>70 %</option>
+          <option value="80">80 %</option>
+          <option value="90">90 %</option>
+        </select>
+      </div>
+
+      <div id="examplesContainer" class="example-list"></div>
+    </section>
+
+    
+
+    <h2 id="userImageHeading" class="section-heading">Eigenes Bild klassifizieren</h2>
+    <p class="hint">Wähle ein Bild aus oder ziehe es in den Bereich. Die Klassifikation startet automatisch.</p>
 
     <div class="card layout-grid">
       <section class="left-column">
@@ -28,14 +78,22 @@
           accept="image/jpeg,image/png,image/webp"
         />
 
-        <div class="image-wrapper">
+        <div
+          id="uploadDropzone"
+          class="image-wrapper upload-dropzone"
+          role="button"
+          tabindex="0"
+          aria-label="Bild hierher ziehen oder per Dateiauswahl hochladen"
+        >
           <img id="previewImage" alt="Vorschau" hidden />
-          <div id="placeholder">Noch kein Bild ausgewählt</div>
+          <div id="placeholder">
+            <strong>Noch kein Bild ausgewählt</strong><br />
+            Bild hierher ziehen und ablegen oder oben über die Dateiauswahl laden
+          </div>
         </div>
 
-        <div class="button-row">
-          <button id="classifyButton" disabled>Klassifikation starten</button>
-        </div>
+        <div id="userImageEvaluation" class="classification-eval neutral" hidden>Noch nicht bewertet</div>
+
       </section>
 
       <section class="right-column">
@@ -65,7 +123,88 @@
         </div>
       </section>
     </div>
+
+    <h2 id="discussionHeading" class="section-heading">Diskussion</h2>
+    <section class="card content-card">
+      <p>
+        Bei klaren, gut ausgeleuchteten Bildern mit einem einzelnen Hauptmotiv hat die Klassifikation insgesamt am besten funktioniert.
+        Besonders typische Objekte wie Tiere oder Alltagsgegenstaende wurden oft mit einer hohen Confidence erkannt.
+        Schwieriger wurde es bei Bildern mit unruhigem Hintergrund, ungewohnten Perspektiven oder mehreren Objekten gleichzeitig.
+        Dabei war auffaellig, dass das Modell manchmal eher Texturen und Farbverteilungen als das eigentliche Motiv bewertet.
+        Unscharfe oder sehr kleine Bildausschnitte fuehrten haeufig zu ungenauen oder wechselnden Ergebnissen.
+        Auch Zeichnungen, stilisierte Darstellungen oder stark bearbeitete Fotos wurden nicht immer passend eingeordnet.
+        Daraus laesst sich ableiten, dass das Modell besonders gut mit Motiven arbeitet, die den Trainingsdaten aehneln.
+        Ich habe ausserdem gelernt, dass eine hohe Confidence nicht automatisch bedeutet, dass die Vorhersage fachlich korrekt ist.
+        Fuer eine vernuenftige Bewertung sollte man deshalb immer auch den Bildkontext und alternative Treffer betrachten.
+        Insgesamt zeigt die Anwendung gut, wie leistungsfaehig vortrainierte Modelle sind, aber auch, wo ihre Grenzen im praktischen Einsatz liegen.
+      </p>
+    </section>
+
+    <h2 id="documentationHeading" class="section-heading">Dokumentation</h2>
+    <section class="card content-card">
+      <h3>1) Technisch</h3>
+      <ul class="content-list">
+        <li><strong>ml5.js:</strong> Dieses Framework wird fuer die Bildklassifikation verwendet und stellt ein einfach nutzbares Interface fuer vortrainierte Machine-Learning-Modelle im Browser bereit.</li>
+        <li><strong>Chart.js:</strong> Damit werden die Klassifikationsergebnisse als Diagramm visualisiert, sodass die Confidence-Werte schnell verglichen werden koennen.</li>
+        <li><strong>chartjs-plugin-datalabels:</strong> Das Plugin ergaenzt die Diagramme um direkt sichtbare Prozentwerte und verbessert dadurch die Lesbarkeit.</li>
+        <li><strong>Technische Besonderheiten:</strong> Die Loesung arbeitet komplett clientseitig, benoetigt also kein Backend. Zusaetzlich werden Beispielbilder automatisch ausgewertet und ueber eine konfigurierbare Confidence-Schwelle als richtig oder falsch bewertet.</li>
+      </ul>
+
+      <h3>2) Fachlich</h3>
+      <p>
+        Der Ansatz besteht darin, ein vortrainiertes Bildklassifikationsmodell im Browser zu laden und sowohl Nutzerbilder als auch vorbereitete Beispielbilder damit auszuwerten.
+        Die Logik trennt klar zwischen Bildauswahl, Klassifikation, Ergebnisanzeige und Visualisierung der Wahrscheinlichkeiten.
+        Fuer die fachliche Bewertung der Beispiele wird das erkannte Label mit einer erwarteten Kategorie verglichen und zusaetzlich ueber eine Confidence-Schwelle abgesichert.
+        So laesst sich nicht nur erkennen, welches Label das Modell bevorzugt, sondern auch, wie sicher diese Entscheidung ausfaellt.
+        Die bisherigen Resultate deuten darauf hin, dass standardisierte und eindeutige Motive besser funktionieren als komplexe oder ungewoehnliche Bildsituationen.
+        Als Quellen wurden die Dokumentation von ml5.js sowie die Dokumentation von Chart.js fuer die Diagrammdarstellung verwendet.
+      </p>
+    </section>
   </main>
+
+  <button id="toTopButton" class="to-top-button" type="button" aria-label="Nach oben scrollen">
+    Nach oben
+  </button>
+
+  <template id="exampleCardTemplate">
+    <div class="card layout-grid example-card">
+      <section class="left-column">
+        <p class="example-title"></p>
+        <div class="image-wrapper">
+          <img class="example-image" alt="Beispielbild" />
+        </div>
+        <div class="classification-eval neutral">Noch nicht bewertet</div>
+      </section>
+
+      <section class="right-column">
+        <div class="result">
+          <p><strong>Status:</strong> <span class="example-status">Modell wird geladen...</span></p>
+          <p><strong>Ergebnis:</strong> <span class="example-label">-</span></p>
+          <p><strong>Confidence:</strong> <span class="example-confidence">-</span></p>
+        </div>
+
+        <div class="chart-section">
+          <div class="chart-header">
+            <h2>Confidence-Verteilung</h2>
+            <label>Diagrammtyp:
+              <select class="example-chart-type">
+                <option value="bar">Balken</option>
+                <option value="pie">Pie</option>
+                <option value="doughnut">Doughnut</option>
+                <option value="polarArea">Polar Area</option>
+                <option value="radar">Radar</option>
+              </select>
+            </label>
+          </div>
+          <p class="chart-status">Wird nach Modellladung klassifiziert...</p>
+          <div class="chart-wrapper">
+            <canvas class="example-chart" aria-label="Beispielklassifikation als Diagramm"></canvas>
+            <div class="chart-fallback" hidden></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </template>
 
   <script src="script.js"></script>
 </body>
