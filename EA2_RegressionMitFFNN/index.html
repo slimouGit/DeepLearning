@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FFNN Regression</title>
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+<main class="page">
+  <header class="hero">
+    <p class="eyebrow">Deep Learning EA2</p>
+    <h1>Regression Lernen mit Feed-Forward Neural Network (TensorFlow.js)</h1>
+    <p class="lead">
+      Approximation der Funktion auf [-2, 2] mit verrauschten und unverrauschten Daten,
+      inklusive Best-Fit und Overfit Vergleich.
+    </p>
+  </header>
+
+  <section class="controls card">
+    <h2>Steuerung</h2>
+    <div class="buttons">
+      <button id="btnRun" type="button">Alles neu berechnen</button>
+      <button id="btnSaveData" type="button">Datensatz speichern</button>
+      <button id="btnLoadData" type="button">Datensatz laden</button>
+      <button id="btnSaveModels" type="button">Modelle speichern</button>
+      <button id="btnLoadModels" type="button">Modelle laden</button>
+      <button id="btnTestModels" type="button">Modelle testen (MSE)</button>
+    </div>
+    <p id="status" class="status">Initialisierung...</p>
+  </section>
+
+  <section>
+    <h2>Resultate (R1 bis R4)</h2>
+    <div class="grid">
+      <article class="plot-card">
+        <h3>R1 links: Datensatz ohne Rauschen (Train + Test)</h3>
+        <div id="r1_clean" class="plot"></div>
+      </article>
+      <article class="plot-card">
+        <h3>R1 rechts: Datensatz mit Rauschen (Train + Test)</h3>
+        <div id="r1_noisy" class="plot"></div>
+      </article>
+
+      <article class="plot-card">
+        <h3>R2 links: y_unverrauscht(x) auf Trainingsdaten</h3>
+        <div id="r2_train" class="plot"></div>
+      </article>
+      <article class="plot-card">
+        <h3>R2 rechts: y_unverrauscht(x) auf Testdaten</h3>
+        <div id="r2_test" class="plot"></div>
+      </article>
+      <div id="mse_r2" class="mse-line"></div>
+
+      <article class="plot-card">
+        <h3>R3 links: y_best(x) auf Trainingsdaten (verrauscht)</h3>
+        <div id="r3_train" class="plot"></div>
+      </article>
+      <article class="plot-card">
+        <h3>R3 rechts: y_best(x) auf Testdaten (verrauscht)</h3>
+        <div id="r3_test" class="plot"></div>
+      </article>
+      <div id="mse_r3" class="mse-line"></div>
+
+      <article class="plot-card">
+        <h3>R4 links: y_overfit(x) auf Trainingsdaten (verrauscht)</h3>
+        <div id="r4_train" class="plot"></div>
+      </article>
+      <article class="plot-card">
+        <h3>R4 rechts: y_overfit(x) auf Testdaten (verrauscht)</h3>
+        <div id="r4_test" class="plot"></div>
+      </article>
+      <div id="mse_r4" class="mse-line"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Loss-Verlauf (MSE pro Epoche)</h2>
+    <div class="loss-grid">
+      <article class="plot-card">
+        <h3>Clean Modell</h3>
+        <div id="loss_clean" class="plot"></div>
+      </article>
+      <article class="plot-card">
+        <h3>Best-Fit Modell</h3>
+        <div id="loss_best" class="plot"></div>
+      </article>
+      <article class="plot-card">
+        <h3>Overfit Modell</h3>
+        <div id="loss_overfit" class="plot"></div>
+      </article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Diskussion (max. 10 Sätze)</h2>
+    <ol class="compact-list">
+      <li>Ohne Rauschen approximiert das Netz die Funktion stabil, daher liegen Trainings- und Test-MSE meist eng beieinander.</li>
+      <li>Mit Label-Rauschen entsteht ein unvermeidbarer Fehleranteil, den das Modell nicht perfekt generalisieren kann.</li>
+      <li>Das Best-Fit-Modell nutzt eine mittlere Epochenzahl und liefert im Test typischerweise den kleinsten MSE auf den verrauschten Daten.</li>
+      <li>Das Overfit-Modell minimiert den Trainingsfehler weiter, verschlechtert aber den Testfehler sichtbar.</li>
+      <li>Der Gap zwischen Train- und Test-MSE ist ein direktes Signal fuer Overfitting.</li>
+      <li>Mehr Epochen helfen nur bis zu einem Punkt; danach wird vor allem Rauschen mitgelernt.</li>
+      <li>Die zufaellige Datengenerierung fuehrt zu leicht unterschiedlichen Ergebnissen pro Lauf.</li>
+      <li>Mit nur 50 Trainingspunkten ist die Datenbasis klein, wodurch Overfitting leichter auftritt.</li>
+      <li>Die Architektur mit 2x100 ReLU ist leistungsfaehig genug, um sowohl gute Approximation als auch Overfit zu zeigen.</li>
+      <li>Gelernt wurde vor allem der Unterschied zwischen Datenanpassung und Generalisierung.</li>
+    </ol>
+  </section>
+
+  <section class="doc-grid">
+    <article class="card">
+      <h2>Dokumentation - Technisch</h2>
+      <ul class="compact-list">
+        <li>TensorFlow.js: Definition, Training, Evaluierung, Speichern und Laden der FFNN-Modelle im Browser.</li>
+        <li>Plotly.js: Interaktive Diagramme fuer Datenpunkte, Modellvorhersagen und Loss-Verlaeufe.</li>
+        <li>Web Storage API (localStorage): Speichern und Laden des generierten Datensatzes als JSON.</li>
+        <li>IndexedDB via tfjs-IO: Persistenz der trainierten Modelle direkt im Browser.</li>
+      </ul>
+      <p>
+        Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf,
+        bleibt aber dynamisch und erlaubt fuer den Entwicklungszyklus erneutes Training und Persistenz.
+      </p>
+    </article>
+    <article class="card">
+      <h2>Dokumentation - Fachlich</h2>
+      <p>
+        Zuerst werden 100 gleichverteilte x-Werte in [-2, 2] erzeugt und daraus y-Werte ueber die Ground-Truth berechnet.
+        Danach erfolgt eine zufaellige 50/50 Aufteilung in Train/Test, bevor Gaussian Label-Rauschen mit Varianz 0.05 addiert wird.
+      </p>
+      <p>
+        Drei Modelle mit identischer Architektur (2 Hidden Layer mit je 100 ReLU-Neuronen, linearer Output) werden trainiert:
+        clean (ohne Rauschen), best-fit (verrauschte Daten, moderate Epochenzahl) und overfit (verrauschte Daten, sehr viele Epochen).
+      </p>
+      <p>
+        Zur Bewertung wird Mean Squared Error getrennt fuer Training und Test berechnet; die Testdaten werden nicht zum Training
+        oder zur Hyperparameter-Optimierung genutzt. Die Visualisierung zeigt Daten, Fits und Loss-Verlaeufe nachvollziehbar im 2-Spalten-Layout.
+      </p>
+    </article>
+  </section>
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
