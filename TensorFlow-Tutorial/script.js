@@ -6,7 +6,9 @@ console.log('Hello TensorFlow');
  */
 async function getData() {
   const carsDataResponse = await fetch('https://storage.googleapis.com/tfjs-tutorials/carsData.json');
+  
   const carsData = await carsDataResponse.json();
+  console.log(carsData);
   const cleaned = carsData.map(car => ({
     mpg: car.Miles_per_Gallon,
     horsepower: car.Horsepower,
