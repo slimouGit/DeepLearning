@@ -19,8 +19,9 @@
       <div class="header-main">
         <div class="header-brand">
           <h1>Bilderkennung mit ml5</h1>
-          <p><a href="https://docs.ml5js.org/#/">ml5.js Dokumentation</a></p>
+          
         </div>
+        
         <button
           id="navToggle"
           class="nav-toggle"
@@ -44,7 +45,7 @@
 
     <section class="examples-section" aria-labelledby="examplesHeading">
       <h2 id="examplesHeading" class="section-heading">Beispiele</h2>
-      <p class="hint">Lege fest, ab welcher Mindest-Confidence eine Beispielklassifikation als richtig oder falsch bewertet wird.</p>
+      <p class="hint">Lege fest, ab welcher Mindest-Confidence eine Beispielklassifikation als richtig oder falsch bewertet wird. Standard ist 70 %.</p>
       <div class="threshold-control examples-threshold-control">
         <label for="confidenceThresholdSelect">
           Mindest-Confidence fuer die Bewertung (richtig/falsch):
@@ -141,7 +142,7 @@
     <section class="card content-card">
       <h3>1) Technisch</h3>
       <ul class="content-list">
-        <li><strong>ml5.js:</strong> Wird fuer die Bildklassifikation im Browser verwendet.</li>
+        <li><strong>ml5.js:</strong> Wird fuer die Bildklassifikation im Browser verwendet. <a href="https://docs.ml5js.org/#/" target="_blank">ml5.js Dokumentation</a></li>
         <li><strong>Chart.js + chartjs-plugin-datalabels:</strong> Zeigt die Top-Treffer als Diagramm mit Prozentwerten an.</li>
         <li><strong>Eigenes Bild:</strong> Nach Upload oder Drag-and-Drop startet die Klassifikation automatisch. Ein separater Start-Button ist nicht mehr noetig.</li>
         <li><strong>Mindest-Confidence:</strong> Die Grenze ist konfigurierbar, Standard ist 70 %. Damit kann das Modell bewusst "strenger" oder "lockerer" getestet werden.</li>
