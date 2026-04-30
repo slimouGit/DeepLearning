@@ -162,6 +162,83 @@
     </section>
   </main>
 
+  <footer class="site-footer">
+    <p>
+      &copy; 2026 Salim Oussayfi &nbsp;&middot;&nbsp;
+      <button type="button" class="footer-link" id="dsgvoOpenBtn" aria-haspopup="dialog">Datenschutzerklärung (DSGVO)</button>
+    </p>
+  </footer>
+
+  <!-- DSGVO Modal -->
+  <div id="dsgvoModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="dsgvoModalTitle" hidden>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 id="dsgvoModalTitle">Datenschutzerklärung (DSGVO)</h2>
+        <button type="button" class="modal-close" id="dsgvoCloseBtn" aria-label="Schließen">&times;</button>
+      </div>
+      <div class="modal-body">
+        <h3>1. Verantwortliche Stelle</h3>
+        <p>Verantwortlich für die Datenverarbeitung auf dieser Website ist:<br />
+        <strong>Salim Oussayfi</strong><br />
+        E-Mail: <a href="mailto:box@slimou.de">box@slimou.de</a></p>
+
+        <h3>2. Erhebung und Speicherung personenbezogener Daten</h3>
+        <p>Beim Besuch dieser Website werden durch den Hosting-Anbieter automatisch technische Informationen erfasst, wie:</p>
+        <ul>
+          <li>IP-Adresse</li>
+          <li>Datum und Uhrzeit des Zugriffs</li>
+          <li>Verwendeter Browser und Betriebssystem</li>
+          <li>Hostname des zugreifenden Rechners</li>
+        </ul>
+        <p>Diese Daten sind notwendig, um einen stabilen Betrieb der Seite zu gewährleisten und werden aus Sicherheitsgründen (z.&nbsp;B. zur Aufklärung von Missbrauch) vorübergehend gespeichert. Eine Zusammenführung dieser Daten mit anderen Datenquellen erfolgt nicht.</p>
+
+        <h3>3. Nutzer-Login und Bild-Upload</h3>
+        <p>Wenn Sie sich auf dieser Website einloggen oder als Administrator Bilder hochladen, speichern wir die von Ihnen eingegebenen Daten (Benutzername, Passwort-Hash sowie ggf. hochgeladene Bilddateien und Bildbeschreibungen).</p>
+        <p>Diese Datenverarbeitung erfolgt auf Grundlage von Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;b DSGVO (Vertrag oder vorvertragliche Maßnahme) und Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;f DSGVO (berechtigtes Interesse an der Funktionsfähigkeit der Anwendung).</p>
+
+        <h3>4. Verwendung von Cookies</h3>
+        <p>Diese Website verwendet keine Tracking-Cookies oder Analyse-Tools. Es werden lediglich technisch notwendige Cookies durch die PHP-Session-Verwaltung gesetzt.</p>
+
+        <h3>5. Weitergabe von Daten an Dritte</h3>
+        <p>Eine Übermittlung Ihrer personenbezogenen Daten an Dritte findet nicht statt, außer:</p>
+        <ul>
+          <li>Sie haben ausdrücklich eingewilligt (Art.&nbsp;6 Abs.&nbsp;1 lit.&nbsp;a DSGVO)</li>
+          <li>die Weitergabe ist zur Vertragserfüllung erforderlich</li>
+          <li>es besteht eine gesetzliche Verpflichtung dazu</li>
+        </ul>
+
+        <h3>6. Speicherdauer</h3>
+        <p>Ihre personenbezogenen Daten werden nur so lange gespeichert, wie es für die genannten Zwecke erforderlich ist oder wie es gesetzlich vorgeschrieben ist. Logdaten des Servers werden in der Regel nach 7 Tagen automatisch gelöscht.</p>
+
+        <h3>7. Ihre Rechte</h3>
+        <p>Sie haben jederzeit das Recht auf:</p>
+        <ul>
+          <li>Auskunft über Ihre gespeicherten Daten</li>
+          <li>Berichtigung unrichtiger Daten</li>
+          <li>Löschung Ihrer Daten, sofern keine gesetzlichen Aufbewahrungspflichten bestehen</li>
+          <li>Einschränkung der Verarbeitung</li>
+          <li>Widerspruch gegen die Verarbeitung (Art.&nbsp;21 DSGVO)</li>
+          <li>Datenübertragbarkeit (Art.&nbsp;20 DSGVO)</li>
+        </ul>
+        <p>Zudem haben Sie das Recht, sich bei der zuständigen Aufsichtsbehörde zu beschweren. Eine Liste finden Sie unter: <a href="https://www.bfdi.bund.de" target="_blank" rel="noopener noreferrer">www.bfdi.bund.de</a></p>
+
+        <h3>8. Widerruf Ihrer Einwilligung</h3>
+        <p>Sofern Sie eine Einwilligung zur Datenverarbeitung erteilt haben, können Sie diese jederzeit mit Wirkung für die Zukunft widerrufen.</p>
+
+        <h3>9. Hosting</h3>
+        <p>Diese Website wird bei einem deutschen Hosting-Anbieter betrieben. Eine Auftragsverarbeitungsvereinbarung nach Art.&nbsp;28 DSGVO wurde abgeschlossen.</p>
+
+        <h3>10. Fragen zum Datenschutz</h3>
+        <p>Bei Fragen zum Datenschutz wenden Sie sich bitte direkt an:<br />
+        <strong>Salim Oussayfi</strong><br />
+        E-Mail: <a href="mailto:box@slimou.de">box@slimou.de</a></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" id="dsgvoCloseBtn2">Schließen</button>
+      </div>
+    </div>
+  </div>
+
   <button id="toTopButton" class="to-top-button" type="button" aria-label="Nach oben scrollen">
     Nach oben
   </button>
@@ -207,5 +284,37 @@
   </template>
 
   <script src="script.js"></script>
+  <script>
+    (function () {
+      var modal = document.getElementById('dsgvoModal');
+      var openBtn = document.getElementById('dsgvoOpenBtn');
+      var closeBtn = document.getElementById('dsgvoCloseBtn');
+      var closeBtn2 = document.getElementById('dsgvoCloseBtn2');
+
+      function openModal() {
+        modal.hidden = false;
+        document.body.style.overflow = 'hidden';
+        closeBtn.focus();
+      }
+
+      function closeModal() {
+        modal.hidden = true;
+        document.body.style.overflow = '';
+        openBtn.focus();
+      }
+
+      openBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      closeBtn2.addEventListener('click', closeModal);
+
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !modal.hidden) closeModal();
+      });
+    })();
+  </script>
 </body>
 </html>
