@@ -61,6 +61,11 @@ if (window.Chart && window.ChartDataLabels) {
   Chart.register(ChartDataLabels);
 }
 
+/**
+ * Öffnet oder schließt das mobile Navigationsmenü.
+ * Setzt aria-Attribute, toggled die CSS-Klasse und aktualisiert den Header-Offset.
+ * @param {boolean} isOpen - true = Navigation öffnen, false = schließen
+ */
 function setMobileNavigationState(isOpen) {
   if (!navToggle || !headerNav) {
     return;
@@ -73,6 +78,11 @@ function setMobileNavigationState(isOpen) {
   syncFixedHeaderOffset();
 }
 
+/**
+ * Scrollt sanft zu einem Seitenabschnitt anhand seiner Element-ID.
+ * Berücksichtigt die Höhe des fixierten Headers, damit der Abschnitt nicht verdeckt wird.
+ * @param {string} targetId - Die ID des Ziel-Elements
+ */
 function scrollToSection(targetId) {
   const targetElement = document.getElementById(targetId);
   if (!targetElement) {
@@ -88,12 +98,22 @@ function scrollToSection(targetId) {
   });
 }
 
+/**
+ * Zeigt oder versteckt den "Nach oben"-Button abhängig von der aktuellen Scrollposition.
+ * Der Button wird ab 180 px Scrolltiefe eingeblendet.
+ */
 function updateScrollControls() {
   if (toTopButton) {
     toTopButton.classList.toggle("is-visible", window.scrollY > 180);
   }
 }
 
+/**
+ * Behandelt Klicks auf Navigations-Ankerlinks.
+ * Verhindert das Standard-Scrollverhalten und nutzt stattdessen sanftes Scrollen.
+ * Schließt außerdem das mobile Menü nach dem Klick.
+ * @param {MouseEvent} event - Das auslösende Klick-Event
+ */
 function handleNavigationLinkClick(event) {
   const href = event.currentTarget.getAttribute("href");
   if (!href || !href.startsWith("#")) {
@@ -105,6 +125,11 @@ function handleNavigationLinkClick(event) {
   setMobileNavigationState(false);
 }
 
+/**
+ * Registriert alle Event-Listener für die Navigation:
+ * Ankerlinks mit sanftem Scrollen, Hamburger-Toggle, "Nach oben"-Button,
+ * Schließen des Menüs bei Außenklick oder Escape-Taste sowie Resize-Handler.
+ */
 function setupNavigation() {
   navLinks.forEach((link) => {
     link.addEventListener("click", handleNavigationLinkClick);
@@ -158,6 +183,12 @@ function setupNavigation() {
   updateScrollControls();
 }
 
+/**
+ * Erstellt alle Beispiel-Karten aus dem HTML-Template anhand von `examplesConfig`.
+ * Für jede Karte werden DOM-Referenzen gesammelt, das initiale Bewertungs-UI gesetzt
+ * und ein Event-Listener für den Diagramm-Typ-Wechsel registriert.
+ * Die Zustands-Objekte werden in `exampleCards` gespeichert.
+ */
 function buildExampleCards() {
   if (!examplesContainer || !exampleTemplate) {
     return;
@@ -214,6 +245,11 @@ function buildExampleCards() {
   });
 }
 
+/**
+ * Misst die aktuelle Höhe des fixierten Headers und schreibt den Wert
+ * als CSS-Custom-Property `--examples-header-height` ins body-Element.
+ * Wird aufgerufen nach Resize und nach dem Öffnen/Schließen der Navigation.
+ */
 function syncFixedHeaderOffset() {
   if (!examplesFixedHeader) {
     document.body.style.setProperty("--examples-header-height", "0px");
@@ -225,6 +261,11 @@ function syncFixedHeaderOffset() {
   document.body.style.setProperty("--examples-header-height", `${Math.ceil(headerHeight + headerGap)}px`);
 }
 
+/**
+ * Passt die CSS-Höhe des Chart-Canvas an die Bildschirmbreite an.
+ * Auf Mobilgeräten (≤ 600 px) wird eine kleinere Höhe gesetzt.
+ * @param {{ canvas: HTMLCanvasElement | null }} chartCtx - Kontext-Objekt mit Canvas-Referenz
+ */
 function syncCanvasSize(chartCtx) {
   if (!chartCtx.canvas) {
     return;
@@ -234,12 +275,23 @@ function syncCanvasSize(chartCtx) {
   chartCtx.canvas.style.height = isMobile ? "260px" : "340px";
 }
 
+/**
+ * Setzt den Statustext eines Diagramm-Bereichs (z. B. Lade- oder Fehlermeldung).
+ * @param {string} message - Der anzuzeigende Text
+ * @param {{ statusEl: HTMLElement | null }} chartCtx - Kontext-Objekt mit Status-Element-Referenz
+ */
 function setChartStatus(message, chartCtx) {
   if (chartCtx.statusEl) {
     chartCtx.statusEl.textContent = message;
   }
 }
 
+/**
+ * Rendert einfache HTML-Balken als Fallback, wenn Chart.js nicht verfügbar ist.
+ * Versteckt das Canvas-Element und befüllt das Fallback-Element mit formatierten Balkenzeilen.
+ * @param {Array<{label: string, confidence: number}>} results - Klassifikationsergebnisse
+ * @param {{ canvas: HTMLCanvasElement, fallback: HTMLElement }} chartCtx - Chart-Kontext-Objekt
+ */
 function renderFallbackBars(results, chartCtx) {
   if (!chartCtx.fallback || !chartCtx.canvas) {
     return;
@@ -271,6 +323,12 @@ function renderFallbackBars(results, chartCtx) {
   chartCtx.fallback.innerHTML = items;
 }
 
+/**
+ * Einstiegspunkt der Anwendung: Lädt das MobileNet-Modell via ml5,
+ * klassifiziert das hochgeladene Bild (falls bereits vorhanden) und
+ * startet die Klassifikation aller Beispielkarten.
+ * Zeigt passende Statusmeldungen im UI und behandelt Fehler.
+ */
 async function init() {
   try {
     if (isFileProtocol) {
@@ -315,6 +373,13 @@ async function init() {
   }
 }
 
+/**
+ * Erstellt und gibt eine vollständig initialisierte ml5-MobileNet-Klassifizierer-Instanz zurück.
+ * Unterstützt sowohl Promise-basierte als auch synchrone ml5-Builds und wartet,
+ * bis das Modell über `resolvedClassifier.ready` vollständig geladen ist.
+ * @returns {Promise<object>} Fertig geladener ml5-ImageClassifier
+ * @throws {Error} Wenn ml5 nicht verfügbar ist oder der Classifier nicht initialisiert werden kann
+ */
 async function createClassifier() {
   if (!window.ml5 || typeof ml5.imageClassifier !== "function") {
     throw new Error("ml5 konnte nicht geladen werden (CDN/Netzwerk).");
@@ -344,6 +409,13 @@ async function createClassifier() {
   return resolvedClassifier;
 }
 
+/**
+ * Führt die Bildklassifikation auf einem gegebenen Bild-Element aus.
+ * Versucht zunächst die Promise-basierte API; fällt bei Fehlern automatisch
+ * auf die Callback-basierte API zurück (Kompatibilität mit verschiedenen ml5-Versionen).
+ * @param {HTMLImageElement} input - Das zu klassifizierende Bildelement
+ * @returns {Promise<Array<{label: string, confidence: number}>>} Die Top-K Klassifikationsergebnisse
+ */
 async function classifyInput(input) {
   let results = [];
 
@@ -398,6 +470,13 @@ async function classifyInput(input) {
   return results.slice(0, TOP_K);
 }
 
+/**
+ * Stellt sicher, dass ein Bild vollständig geladen ist, bevor es klassifiziert wird.
+ * Gibt ein bereits geladenes Bild sofort zurück. Wartet andernfalls auf das `load`-Event.
+ * @param {HTMLImageElement} img - Das zu prüfende Bildelement
+ * @returns {Promise<void>}
+ * @throws {Error} Wenn das Bild nicht geladen werden kann oder `img` null ist
+ */
 async function ensureImageLoaded(img) {
   if (!img) {
     throw new Error("Bildelement nicht gefunden.");
@@ -425,6 +504,11 @@ async function ensureImageLoaded(img) {
   });
 }
 
+/**
+ * Setzt den Zustand des hochgeladenen Benutzerbilds vollständig zurück.
+ * Gibt die Object-URL frei, versteckt die Vorschau, leert Ergebnisfelder
+ * und setzt das Bewertungs-UI in den neutralen Ausgangszustand.
+ */
 function resetUploadedImageState() {
   if (uploadedImageObjectUrl) {
     URL.revokeObjectURL(uploadedImageObjectUrl);
@@ -444,6 +528,12 @@ function resetUploadedImageState() {
   setConfidenceEvaluation(userImageEvaluation);
 }
 
+/**
+ * Prüft, ob eine Datei ein zulässiges Bildformat hat (JPEG, PNG oder WEBP).
+ * Validiert sowohl den MIME-Typ als auch die Dateiendung.
+ * @param {File} file - Die zu prüfende Datei
+ * @returns {boolean} true, wenn das Format erlaubt ist
+ */
 function isAllowedImageFile(file) {
   if (!file) {
     return false;
@@ -458,6 +548,11 @@ function isAllowedImageFile(file) {
   return allowedTypes.includes(file.type) || (!file.type && hasAllowedExtension);
 }
 
+/**
+ * Setzt den visuellen Drag-Zustand der Upload-Dropzone.
+ * Entfernt alle Zustands-Klassen und fügt die passende für `nextState` hinzu.
+ * @param {'active' | 'invalid' | undefined} nextState - Gewünschter Zustand; undefined = neutral
+ */
 function setDropzoneState(nextState) {
   if (!uploadDropzone) {
     return;
@@ -474,6 +569,12 @@ function setDropzoneState(nextState) {
   }
 }
 
+/**
+ * Lädt eine ausgewählte Datei als Vorschaubild und startet bei Modellbereitschaft
+ * automatisch die Klassifikation. Validiert das Dateiformat und zeigt
+ * entsprechende Statusmeldungen. Erstellt eine temporäre Object-URL für das Bild.
+ * @param {File | null} file - Die zu ladende Bilddatei oder null zum Zurücksetzen
+ */
 function loadSelectedImage(file) {
   resetUploadedImageState();
 
@@ -519,6 +620,12 @@ function loadSelectedImage(file) {
   previewImage.src = uploadedImageObjectUrl;
 }
 
+/**
+ * Extrahiert die erste Datei aus einem Drag-and-Drop-DataTransfer-Objekt.
+ * Prüft zuerst `dataTransfer.items` (modernes API), dann `dataTransfer.files` als Fallback.
+ * @param {DataTransfer | null} dataTransfer - Das DataTransfer-Objekt des Drop-Events
+ * @returns {File | null} Die erste gefundene Datei oder null
+ */
 function getFirstDroppedFile(dataTransfer) {
   if (!dataTransfer) {
     return null;
@@ -535,6 +642,12 @@ function getFirstDroppedFile(dataTransfer) {
   return dataTransfer.files?.[0] || null;
 }
 
+/**
+ * Richtet die gesamte Drag-and-Drop- sowie Klick-Funktionalität der Upload-Zone ein.
+ * Registriert Event-Listener für dragenter, dragover, dragleave, drop, click und keydown.
+ * Verhindert Browser-Standardverhalten (z. B. Datei im Tab öffnen) und
+ * zeigt visuelles Feedback zum Drag-Zustand.
+ */
 function setupUploadDropzone() {
   if (!uploadDropzone || !imageUpload) {
     return;
@@ -603,6 +716,13 @@ function setupUploadDropzone() {
   });
 }
 
+/**
+ * Aktualisiert das Bewertungs-UI-Element basierend auf dem Konfidenzwert der Klassifikation.
+ * Zeigt "Richtig klassifiziert" (grün) ab dem eingestellten Schwellwert,
+ * "Falsch klassifiziert" (rot) darunter oder einen neutralen Zustand ohne Wert.
+ * @param {HTMLElement} validationEl - Das zu aktualisierende Bewertungs-Element
+ * @param {number} [confidencePercent] - Konfidenz in Prozent (0–100); fehlt → neutraler Zustand
+ */
 function setConfidenceEvaluation(validationEl, confidencePercent) {
   if (!validationEl) {
     return;
@@ -651,6 +771,11 @@ function setConfidenceEvaluation(validationEl, confidencePercent) {
   }
 }
 
+/**
+ * Klassifiziert alle Beispielkarten neu, nachdem der Konfidenz-Schwellwert geändert wurde.
+ * Aktualisiert außerdem das Bewertungs-UI des Benutzerbildes, falls bereits Ergebnisse vorliegen.
+ * Wird nur ausgeführt, wenn Modell und Classifier verfügbar sind.
+ */
 async function reclassifyAllExamples() {
   if (!modelReady || !classifier) {
     return;
@@ -666,6 +791,12 @@ async function reclassifyAllExamples() {
   }
 }
 
+/**
+ * Normalisiert ein ml5-Label, das mehrere kommagetrennte Bezeichnungen enthalten kann.
+ * Gibt nur die erste Bezeichnung (getrimmt) zurück, um eine lesbare Kurzform zu erhalten.
+ * @param {string} label - Das rohe Label aus dem Klassifikationsergebnis
+ * @returns {string} Erster Teilbegriff des Labels oder "Unbekannt"
+ */
 function normalizeLabel(label) {
   if (!label) {
     return "Unbekannt";
@@ -674,6 +805,13 @@ function normalizeLabel(label) {
   return label.split(",")[0].trim();
 }
 
+/**
+ * Gibt das Chart.js-Optionsobjekt für den gewählten Diagrammtyp zurück.
+ * Konfiguriert Legende, Tooltip, Datenbeschriftungen (ChartDataLabels) und
+ * – für Balken- und Radardiagramme – Achsenskalierung mit Prozentangaben.
+ * @param {'bar' | 'pie' | 'doughnut' | 'radar' | string} type - Der Diagrammtyp
+ * @returns {object} Chart.js-Optionsobjekt
+ */
 function getChartOptions(type) {
   const isAxisChart = type === "bar" || type === "radar";
 
@@ -716,6 +854,13 @@ function getChartOptions(type) {
   };
 }
 
+/**
+ * Rendert oder aktualisiert das Chart.js-Diagramm mit den Klassifikationsergebnissen.
+ * Zerstört eine ggf. vorhandene alte Chart-Instanz, bevor eine neue erzeugt wird.
+ * Fällt auf `renderFallbackBars` zurück, wenn Chart.js nicht geladen ist oder ein Fehler auftritt.
+ * @param {Array<{label: string, confidence: number}>} results - Klassifikationsergebnisse
+ * @param {object} chartCtx - Chart-Kontext-Objekt mit canvas, fallback, typeSelect und instance
+ */
 function renderChart(results, chartCtx) {
   if (!chartCtx.canvas || !window.Chart) {
     renderFallbackBars(results, chartCtx);
@@ -802,6 +947,11 @@ imageUpload.addEventListener("click", () => {
   imageUpload.value = "";
 });
 
+/**
+ * Klassifiziert das aktuell hochgeladene Benutzerbild mit dem geladenen Classifier.
+ * Zeigt das beste Ergebnis (Label + Konfidenz) im UI an, aktualisiert die Bewertung
+ * und rendert das Ergebnisdiagramm. Behandelt Fehler inklusive file://-Protokoll-Hinweis.
+ */
 async function classifyImage() {
   try {
     statusText.textContent = "Bild wird klassifiziert...";
@@ -836,6 +986,12 @@ async function classifyImage() {
   }
 }
 
+/**
+ * Klassifiziert das Bild einer einzelnen Beispielkarte.
+ * Wartet auf vollständiges Laden des Bildes, führt die Klassifikation durch und
+ * aktualisiert Status, Label, Konfidenz, Bewertungs-UI und Diagramm der Karte.
+ * @param {object} card - Zustands-Objekt der Beispielkarte (imageEl, statusEl, labelEl, …)
+ */
 async function classifyExampleCard(card) {
   if (!card?.imageEl) {
     return;
