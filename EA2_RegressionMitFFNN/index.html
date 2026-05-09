@@ -4,23 +4,56 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FFNN Regression</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css">
 
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-<main class="page">
-  <header class="hero">
+<nav style="padding: 1rem; background-color: #f5f5f5; border-bottom: 1px solid #ddd; position: fixed; top: 0; left: 0; right: 0; z-index: 2000; width: 100%;">
+  <a href="../EA1_Bilderkennung/index.html" style="color: #6750a4; text-decoration: none; font-weight: 500; margin-right: 2rem;">Einsendeaufgabe 1</a>
+  <a href="../EA2_RegressionMitFFNN/index.html" style="color: #6750a4; text-decoration: none; font-weight: 500;">Einsendeaufgabe 2</a>
+</nav>
+<main class="page" style="padding-top: 3.5rem;">
+  <div id="examplesFixedHeader" class="examples-fixed-header">
+    <div class="header-main">
+      <div class="header-brand">
+        <h1>EA 2: Regression mit FFNN</h1>
+      </div>
+      <button
+        id="navToggle"
+        class="nav-toggle"
+        type="button"
+        aria-expanded="false"
+        aria-controls="headerNav"
+        aria-label="Navigation öffnen"
+      >
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </button>
+    </div>
+    <nav id="headerNav" class="header-nav" aria-label="Bereichsnavigation">
+      <a class="nav-link" href="#controls">Steuerung</a>
+      <a class="nav-link" href="#resultats">Resultate</a>
+      <a class="nav-link" href="#loss">Loss-Verlauf</a>
+      <a class="nav-link" href="#diskussion">Diskussion</a>
+      <a class="nav-link" href="#dokumentation">Dokumentation</a>
+    </nav>
+  </div>
+
+  <section class="hero">
     <p class="eyebrow">Deep Learning EA2</p>
-    <h1>Regression Lernen mit Feed-Forward Neural Network (TensorFlow.js)</h1>
     <p class="lead">
       Approximation der Funktion auf [-2, 2] mit verrauschten und unverrauschten Daten,
       inklusive Best-Fit und Overfit Vergleich.
     </p>
-  </header>
+  </section>
 
-  <section class="controls card">
+  <section class="controls card" id="controls">
     <h2>Steuerung</h2>
     <div class="buttons">
       <button id="btnRun" type="button">Alles neu berechnen</button>
@@ -33,7 +66,7 @@
     <p id="status" class="status">Initialisierung...</p>
   </section>
 
-  <section>
+  <section id="resultats">
     <h2>Resultate (R1 bis R4)</h2>
     <div class="grid">
       <article class="plot-card">
@@ -77,7 +110,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="loss">
     <h2>Loss-Verlauf (MSE pro Epoche)</h2>
     <div class="loss-grid">
       <article class="plot-card">
@@ -88,14 +121,10 @@
         <h3>Best-Fit Modell</h3>
         <div id="loss_best" class="plot"></div>
       </article>
-      <article class="plot-card">
-        <h3>Overfit Modell</h3>
-        <div id="loss_overfit" class="plot"></div>
-      </article>
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="diskussion">
     <h2>Diskussion (max. 10 Sätze)</h2>
     <ol class="compact-list">
       <li>Ohne Rauschen approximiert das Netz die Funktion stabil, daher liegen Trainings- und Test-MSE meist eng beieinander.</li>
@@ -111,7 +140,7 @@
     </ol>
   </section>
 
-  <section class="doc-grid">
+  <section class="doc-grid" id="dokumentation">
     <article class="card">
       <h2>Dokumentation - Technisch</h2>
       <ul class="compact-list">
