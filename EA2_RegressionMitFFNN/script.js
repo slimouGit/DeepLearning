@@ -81,11 +81,6 @@ function f(x) {
 /**
  * Aktualisiert das Statusfeld mit Nachricht
  * @param {string} message - Anzuzeigende Nachricht
-/**
- * BOX-MULLER TRANSFORMATION für Gaussian verteilte Zufallszahlen
- * Erzeugt Rausch für die Datenerzeugung
- * @returns {number} Gaussian verteilte Zufallszahl (Mittel=0, Std=1)
- */
  */
 function setStatus(message) {
   const statusEl = document.getElementById("status");
