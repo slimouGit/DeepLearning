@@ -361,7 +361,6 @@ async function trainAllModels(split) {
 function renderLossPlots() {
   plotLoss("loss_clean", appState.losses.clean);
   plotLoss("loss_best", appState.losses.best);
-  plotLoss("loss_overfit", appState.losses.overfit);
 }
 
 function saveDataSet() {
