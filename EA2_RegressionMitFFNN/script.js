@@ -1,17 +1,25 @@
+/**
+ * KONFIGURATION FÜR DAS FFNN REGRESSIONS-EXPERIMENT
+ * Zentrale Parameter für Datenerzeugung, Modelltraining und Darstellung
+ */
 const CONFIG = {
-  N: 100,
+  N: 100,                    // Anzahl der Datenpunkte
   xMin: -2,
-  xMax: 2,
-  noiseVar: 0.05,
-  trainFraction: 0.5,
-  learningRate: 0.01,
-  batchSize: 32,
-  cleanEpochs: 500,
-  bestEpochs: 180,
-  overfitEpochs: 2200,
-  curvePoints: 250
+  xMax: 2,                   // Wertebereich für x-Koordinaten
+  noiseVar: 0.05,            // Varianz des Gaussian Label-Rauschens
+  trainFraction: 0.5,        // 50% Trainingsdaten, 50% Testdaten
+  learningRate: 0.01,        // Adam Optimizer Lernrate
+  batchSize: 32,             // Größe der Mini-Batches beim Training
+  cleanEpochs: 500,          // Epochen für saubere Daten (R2)
+  bestEpochs: 180,           // Epochen für Best-Fit Modell (R3)
+  overfitEpochs: 2200,       // Epochen für Overfitting Modell (R4)
+  curvePoints: 250           // Punkte für Modellkurven-Visualisierung
 };
 
+/**
+ * SPEICHERADRESSEN für LocalStorage (Dataset) und IndexedDB (Modelle)
+ * Ermöglicht Persistenz zwischen Sessions
+ */
 const STORAGE_KEYS = {
   dataset: "ea2_dataset_v1",
   modelClean: "indexeddb://ea2_ffnn_clean",
@@ -19,37 +27,66 @@ const STORAGE_KEYS = {
   modelOverfit: "indexeddb://ea2_ffnn_overfit"
 };
 
+/**
+ * FARBEN für Visualisierungen in Plotly
+ * Konsistente Farbcodierung über alle Diagramme
+ */
 const COLORS = {
-  train: "#0c6d5b",
-  test: "#b24b2a",
-  model: "#16324f",
-  truth: "#9f8a2f",
-  loss: "#1f3b78"
+  train: "#0c6d5b",          // Trainingsdaten
+  test: "#b24b2a",           // Testdaten
+  model: "#16324f",          // Modellvorhersagen
+  truth: "#9f8a2f",          // Wahre Funktion (Ground Truth)
+  loss: "#1f3b78"            // Loss-Verlauf
 };
 
+/**
+ * GLOBALER ANWENDUNGSZUSTAND
+ * Speichert alle wichtigen Daten während der Laufzeit:
+ * - Trainings- und Testdaten
+ * - Drei trainierte Modelle (clean, best-fit, overfit)
+ * - Loss-Verläufe und MSE-Metriken
+ */
 let appState = {
-  dataSplit: null,
+  dataSplit: null,           // Trainings-/Testdaten mit Labels
   models: {
-    clean: null,
-    best: null,
-    overfit: null
+    clean: null,             // Modell auf sauberen Daten trainiert
+    best: null,              // Modell mit optimalen Epochen auf verrauschten Daten
+    overfit: null            // Modell mit zu vielen Epochen (Overfitting)
   },
   losses: {
-    clean: [],
+    clean: [],               // Array mit Loss-Werten pro Epoche
     best: [],
     overfit: []
   },
   mse: {
-    clean: { train: null, test: null },
+    clean: { train: null, test: null },   // Mean Squared Error auf Train/Test
     best: { train: null, test: null },
     overfit: { train: null, test: null }
   }
 };
 
+/**
+ * GROUND TRUTH FUNKTION
+ * Die wahre Funktion, die wir mit dem FFNN approximieren möchten
+ * f(x) = 0.5 * (x+0.8) * (x+1.8) * (x-0.2) * (x-0.3) * (x-1.9) + 1
+ */
 function f(x) {
   return 0.5 * (x + 0.8) * (x + 1.8) * (x - 0.2) * (x - 0.3) * (x - 1.9) + 1;
 }
 
+/**
+ * UTILITY FUNKTIONEN FÜR DATENVERARBEITUNG
+ */
+
+/**
+ * Aktualisiert das Statusfeld mit Nachricht
+ * @param {string} message - Anzuzeigende Nachricht
+/**
+ * BOX-MULLER TRANSFORMATION für Gaussian verteilte Zufallszahlen
+ * Erzeugt Rausch für die Datenerzeugung
+ * @returns {number} Gaussian verteilte Zufallszahl (Mittel=0, Std=1)
+ */
+ */
 function setStatus(message) {
   const statusEl = document.getElementById("status");
   if (statusEl) {
@@ -60,6 +97,12 @@ function setStatus(message) {
 function randn() {
   let u = 0;
   let v = 0;
+/**
+ * FISHER-YATES SHUFFLE Algorithmus
+ * Erzeugt zufällige Permutation für Daten-Aufteilung
+ * @param {number} size - Anzahl der zu shufflenden Indizes
+ * @returns {number[]} Zufällig permutierte Indexliste
+ */
   while (u === 0) u = Math.random();
   while (v === 0) v = Math.random();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
@@ -70,6 +113,11 @@ function shuffleIndices(size) {
   for (let i = indices.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = indices[i];
+/**
+ * VALIDIERUNG von numerischen Arrays
+ * Prüft auf richtige Länge und gültige numerische Werte
+ * @throws {Error} Falls Array ungültig ist
+ */
     indices[i] = indices[j];
     indices[j] = tmp;
   }
@@ -87,32 +135,50 @@ function validateArray(arr, expectedLength, label) {
   }
 }
 
+/**
+ * DATENERZEUGUNG
+ * Erzeugt Trainingsdaten: Punkte der wahren Funktion mit optionalem Rauschen
+ * @param {number} N - Anzahl der Datenpunkte
+ * @param {number} noiseVar - Varianz des Gaussian Rauschens
+ * @returns {Object} {xs, ys, ysNoise, meta}
+ */
 function createDataSet(N = CONFIG.N, noiseVar = CONFIG.noiseVar) {
   const xs = [];
   const ys = [];
   const ysNoise = [];
 
+  // Erzeuge N zufällige Punkte im Wertebereich [xMin, xMax]
   for (let i = 0; i < N; i += 1) {
     const x = CONFIG.xMin + Math.random() * (CONFIG.xMax - CONFIG.xMin);
-    const y = f(x);
+    const y = f(x);                                                  // Ground Truth
     xs.push(x);
     ys.push(y);
-    ysNoise.push(y + randn() * Math.sqrt(noiseVar));
+    ysNoise.push(y + randn() * Math.sqrt(noiseVar));               // Mit Gaussian Rauschen
   }
 
   return { xs, ys, ysNoise, meta: { N, noiseVar } };
 }
 
+/**
+ * TRAIN/TEST AUFTEILUNG
+ * Teilt Datensatz zufällig in Trainings- und Testdaten auf
+ * Wichtig: Keine Daten-Leakage zwischen Train und Test!
+ * @param {Object} data - Erzeugter Datensatz mit xs, ys, ysNoise
+ * @param {number} trainFraction - Anteil der Trainingsdaten (z.B. 0.5 = 50%)
+ * @returns {Object} {train, test, meta} mit aufgeteilten Daten
+ */
 function splitDataRandom(data, trainFraction = CONFIG.trainFraction) {
   validateArray(data.xs, data.meta.N, "xs");
   validateArray(data.ys, data.meta.N, "ys");
   validateArray(data.ysNoise, data.meta.N, "ysNoise");
 
+  // Erzeuge zufällige Permutation der Indizes
   const indices = shuffleIndices(data.xs.length);
   const trainSize = Math.floor(data.xs.length * trainFraction);
   const trainIdx = indices.slice(0, trainSize);
   const testIdx = indices.slice(trainSize);
 
+  // Helper: Rekonstruiere Subset basierend auf Indizes
   const mapSplit = (idxList) => ({
     x: idxList.map((idx) => data.xs[idx]),
     y: idxList.map((idx) => data.ys[idx]),
@@ -130,23 +196,40 @@ function splitDataRandom(data, trainFraction = CONFIG.trainFraction) {
   };
 }
 
+/**
+ * MODELL-ARCHITEKTUR
+ * Feedforward Neural Network mit 2 Hidden Layers:
+ * Input (1) -> Dense(100, ReLU) -> Dense(100, ReLU) -> Dense(1, Linear)
+ * @returns {tf.Sequential} Nicht-trainiertes Modell
+ */
 function createModel() {
   const model = tf.sequential();
   model.add(tf.layers.dense({ units: 100, activation: "relu", inputShape: [1] }));
   model.add(tf.layers.dense({ units: 100, activation: "relu" }));
-  model.add(tf.layers.dense({ units: 1, activation: "linear" }));
+  model.add(tf.layers.dense({ units: 1, activation: "linear" }));  // Output ohne Aktivierung für Regression
 
+  // Adam Optimizer mit kleiner Lernrate für Stabilität
   model.compile({
     optimizer: tf.train.adam(CONFIG.learningRate),
-    loss: "meanSquaredError"
+    loss: "meanSquaredError"  // MSE ist Standard für Regression
   });
   return model;
 }
 
+/**
+ * MODELL-TRAINING
+ * Trainiert ein Modell mit Gradient Descent Optimization
+ * @param {tf.Sequential} model - Zu trainierendes Modell
+ * @param {number[]} x - Input-Werte
+ * @param {number[]} y - Target-Werte
+ * @param {number} epochs - Anzahl der Durchläufe durch den Datensatz
+ * @returns {number[]} Loss-Werte pro Epoche für Visualisierung
+ */
 async function trainModel(model, x, y, epochs) {
   const xs = tf.tensor2d(x, [x.length, 1]);
   const ys = tf.tensor2d(y, [y.length, 1]);
 
+  // Trainiere mit Mini-Batches, shuffle aktiv, verbose aus (kein Console-Output)
   const history = await model.fit(xs, ys, {
     epochs,
     batchSize: CONFIG.batchSize,
@@ -154,23 +237,42 @@ async function trainModel(model, x, y, epochs) {
     verbose: 0
   });
 
+  // Memory-Cleanup: TensorFlow Objekte freigeben
   xs.dispose();
   ys.dispose();
 
   return history.history.loss || [];
 }
 
+/**
+ * MODELL-VORHERSAGEN
+ * Generiert glatte Kurve für Visualisierung durch Sampling
+ * @param {tf.Sequential} model - Trainiertes Modell
+ * @returns {Object} {xs, ys} Koordinaten für Modellkurve
+ */
 async function predictCurve(model) {
+  // Erzeuge äquidistante Punkte im Wertebereich
   const xs = [];
   const step = (CONFIG.xMax - CONFIG.xMin) / (CONFIG.curvePoints - 1);
   for (let i = 0; i < CONFIG.curvePoints; i += 1) {
     xs.push(CONFIG.xMin + i * step);
   }
 
+  // Batch-Vorhersage für alle Punkte
   const xsT = tf.tensor2d(xs, [xs.length, 1]);
+/**
+ * MSE-BERECHNUNG
+ * Berechnet Mean Squared Error auf einem Datensatz (Train oder Test)
+ * MSE = (1/n) * Σ(y_true - y_pred)²
+ * @param {tf.Sequential} model - Trainiertes Modell
+ * @param {number[]} x - Input-Werte
+ * @param {number[]} y - True Label-Werte
+ * @returns {number} MSE-Wert (niedrig = besser)
+ */
   const ysT = model.predict(xsT);
   const ys = Array.from(await ysT.data());
 
+  // Memory-Cleanup
   xsT.dispose();
   ysT.dispose();
   return { xs, ys };
@@ -186,6 +288,14 @@ async function mseOnData(model, x, y) {
   });
 }
 
+/**
+ * VISUALISIERUNGS-FUNKTIONEN mit Plotly.js
+ */
+
+/**
+ * DATENSÄTZE PLOTTEN (R1)
+ * Visualisiert Trainings- und Testdaten mit/ohne Rauschen
+ */
 function plotDataSets(split) {
   const commonLayout = {
     margin: { t: 10, r: 10, b: 45, l: 45 },
@@ -196,6 +306,7 @@ function plotDataSets(split) {
     legend: { orientation: "h", y: -0.2 }
   };
 
+  // R1 Links: Saubere Daten (ohne Rauschen)
   Plotly.newPlot("r1_clean", [
     {
       x: split.train.x,
@@ -215,6 +326,7 @@ function plotDataSets(split) {
     }
   ], commonLayout, { responsive: true });
 
+  // R1 Rechts: Verrauschte Daten
   Plotly.newPlot("r1_noisy", [
     {
       x: split.train.x,
@@ -235,6 +347,10 @@ function plotDataSets(split) {
   ], commonLayout, { responsive: true });
 }
 
+/**
+ * MODELLVORHERSAGEN PLOTTEN (R2, R3, R4)
+ * Zeigt Datenpunkte, Modellkurve und Ground Truth zusammen
+ */
 function plotPrediction(divId, x, y, curve, label) {
   Plotly.newPlot(divId, [
     {
@@ -255,7 +371,7 @@ function plotPrediction(divId, x, y, curve, label) {
     },
     {
       x: curve.xs,
-      y: curve.xs.map((vx) => f(vx)),
+      y: curve.xs.map((vx) => f(vx)),  // Wahre Funktion
       mode: "lines",
       type: "scatter",
       name: "Ground truth",
@@ -267,6 +383,10 @@ function plotPrediction(divId, x, y, curve, label) {
     plot_bgcolor: "#ffffff",
     xaxis: { title: "x" },
     yaxis: { title: "y" },
+/**
+ * LOSS-VERLAUF PLOTTEN
+ * Visualisiert MSE pro Trainingsepoche (Konvergenzverhalten)
+ */
     legend: { orientation: "h", y: -0.25 }
   }, { responsive: true });
 }
@@ -283,6 +403,10 @@ function plotLoss(divId, lossHistory) {
       line: { color: COLORS.loss, width: 2 }
     }
   ], {
+/**
+ * MSE-ZEILE SETZEN
+ * Aktualisiert HTML-Element mit Train/Test MSE Werte
+ */
     margin: { t: 10, r: 10, b: 45, l: 55 },
     paper_bgcolor: "#ffffff",
     plot_bgcolor: "#ffffff",
@@ -358,6 +482,11 @@ async function trainAllModels(split) {
   );
 }
 
+/**
+ * RENDERE LOSS-KURVEN
+ * Plottet Loss-Verlauf für Clean und Best Modelle
+ * (Overfit nicht geplottet wegen unterschiedlicher Y-Skala)
+ */
 function renderLossPlots() {
   plotLoss("loss_clean", appState.losses.clean);
   plotLoss("loss_best", appState.losses.best);
