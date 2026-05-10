@@ -514,7 +514,7 @@ section {
 }
 
 .controls {
-  margin-top: 20px;
+  margin-top: 0;
   margin-bottom: 30px;
   position: fixed;
   top: calc(3.5rem + 90px);
