@@ -510,11 +510,11 @@ section {
 }
 
 #resultats {
-  padding-top: 135px;
+  padding-top: 200px;
 }
 
 .controls {
-  margin-top: 0;
+  margin-top: 20px;
   margin-bottom: 30px;
   position: fixed;
   top: calc(3.5rem + 90px);
