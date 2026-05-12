@@ -66,6 +66,15 @@ let appState = {
 };
 
 /**
+ * DOM-ELEMENT REFERENZEN FÜR NAVIGATION
+ * Werden verwendet für responsive Hamburger-Menü-Funktionalität
+ */
+const examplesFixedHeader = document.getElementById("examplesFixedHeader");
+const navToggle = document.getElementById("navToggle");
+const headerNav = document.getElementById("headerNav");
+const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+
+/**
  * GROUND TRUTH FUNKTION
  * Die wahre Funktion, die wir mit dem FFNN approximieren möchten
  * f(x) = 0.5 * (x+0.8) * (x+1.8) * (x-0.2) * (x-0.3) * (x-1.9) + 1
@@ -87,6 +96,131 @@ function setStatus(message) {
   if (statusEl) {
     statusEl.textContent = message;
   }
+}
+
+/**
+ * NAVIGATION FUNKTIONEN
+ * Responsive Hamburger-Menü für mobile Geräte
+ */
+
+/**
+ * Öffnet oder schließt das mobile Navigationsmenü.
+ * Setzt aria-Attribute, toggled die CSS-Klasse und aktualisiert den Header-Offset.
+ * @param {boolean} isOpen - true = Navigation öffnen, false = schließen
+ */
+function setMobileNavigationState(isOpen) {
+  if (!navToggle || !headerNav) {
+    return;
+  }
+
+  const shouldOpen = Boolean(isOpen);
+  navToggle.setAttribute("aria-expanded", String(shouldOpen));
+  navToggle.setAttribute("aria-label", shouldOpen ? "Navigation schließen" : "Navigation öffnen");
+  headerNav.classList.toggle("is-open", shouldOpen);
+  syncFixedHeaderOffset();
+}
+
+/**
+ * Scrollt sanft zu einem Seitenabschnitt anhand seiner Element-ID.
+ * Berücksichtigt die Höhe des fixierten Headers, damit der Abschnitt nicht verdeckt wird.
+ * @param {string} targetId - Die ID des Ziel-Elements
+ */
+function scrollToSection(targetId) {
+  const targetElement = document.getElementById(targetId);
+  if (!targetElement) {
+    return;
+  }
+
+  const headerHeight = examplesFixedHeader?.getBoundingClientRect().height || 0;
+  const targetTop = targetElement.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+
+  window.scrollTo({
+    top: Math.max(targetTop, 0),
+    behavior: "smooth"
+  });
+}
+
+/**
+ * Behandelt Klicks auf Navigations-Ankerlinks.
+ * Verhindert das Standard-Scrollverhalten und nutzt stattdessen sanftes Scrollen.
+ * Schließt außerdem das mobile Menü nach dem Klick.
+ * @param {MouseEvent} event - Das auslösende Klick-Event
+ */
+function handleNavigationLinkClick(event) {
+  const href = event.currentTarget.getAttribute("href");
+  if (!href || !href.startsWith("#")) {
+    return;
+  }
+
+  event.preventDefault();
+  scrollToSection(href.slice(1));
+  setMobileNavigationState(false);
+}
+
+/**
+ * Misst die aktuelle Höhe des fixierten Headers und schreibt den Wert
+ * als CSS-Custom-Property `--examples-header-height` ins body-Element.
+ * Wird aufgerufen nach Resize und nach dem Öffnen/Schließen der Navigation.
+ */
+function syncFixedHeaderOffset() {
+  if (!examplesFixedHeader) {
+    document.body.style.setProperty("--examples-header-height", "0px");
+    return;
+  }
+
+  const headerHeight = examplesFixedHeader.getBoundingClientRect().height;
+  const headerGap = 16;
+  document.body.style.setProperty("--examples-header-height", `${Math.ceil(headerHeight + headerGap)}px`);
+}
+
+/**
+ * Registriert alle Event-Listener für die Navigation:
+ * Ankerlinks mit sanftem Scrollen, Hamburger-Toggle, 
+ * Schließen des Menüs bei Außenklick oder Escape-Taste sowie Resize-Handler.
+ */
+function setupNavigation() {
+  navLinks.forEach((link) => {
+    link.addEventListener("click", handleNavigationLinkClick);
+  });
+
+  if (navToggle) {
+    navToggle.addEventListener("click", () => {
+      const isExpanded = navToggle.getAttribute("aria-expanded") === "true";
+      setMobileNavigationState(!isExpanded);
+    });
+  }
+
+  document.addEventListener("click", (event) => {
+    if (!navToggle || !headerNav || window.innerWidth > 760) {
+      return;
+    }
+
+    const clickTarget = event.target;
+    if (!(clickTarget instanceof Node)) {
+      return;
+    }
+
+    if (examplesFixedHeader?.contains(clickTarget)) {
+      return;
+    }
+
+    setMobileNavigationState(false);
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setMobileNavigationState(false);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) {
+      setMobileNavigationState(false);
+    }
+  });
+
+  setMobileNavigationState(false);
+  syncFixedHeaderOffset();
 }
 
 function randn() {
@@ -630,6 +764,7 @@ function wireUI() {
 
 async function bootstrap() {
   wireUI();
+  setupNavigation();
   try {
     await runFullPipeline();
   } catch (err) {

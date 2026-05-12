@@ -32,7 +32,6 @@ body {
   max-width: var(--container-max-width);
   margin: 24px auto 40px;
   padding: 0 16px 28px;
-  padding-top: 100px;
 }
 
 .section-heading {
@@ -46,9 +45,9 @@ body {
 
 .examples-fixed-header {
   display: grid;
-  gap: 20px;
+  gap: 14px;
   position: fixed;
-  top: 3.5rem;
+  top: 0;
   left: 50%;
   transform: translateX(-50%);
   width: min(var(--container-max-width), calc(100% - 32px));
