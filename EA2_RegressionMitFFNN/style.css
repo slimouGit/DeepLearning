@@ -8,7 +8,7 @@ html {
 
 :root {
   --container-max-width: 760px;
-  --examples-header-height: 0px;
+  --examples-header-height: 160px;
   --md-sys-color-primary: #6750a4;
   --md-sys-color-on-primary: #ffffff;
   --md-sys-color-primary-container: #ede8f5;
@@ -509,18 +509,10 @@ section {
 }
 
 #resultats {
-  padding-top: 200px;
 }
 
 .controls {
-  margin-top: 0;
   margin-bottom: 30px;
-  position: fixed;
-  top: calc(3.5rem + 90px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(var(--container-max-width), calc(100% - 32px));
-  z-index: 999;
 }
 
 .controls .buttons {
