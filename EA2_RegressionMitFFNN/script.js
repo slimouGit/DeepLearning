@@ -73,6 +73,11 @@ const examplesFixedHeader = document.getElementById("examplesFixedHeader");
 const navToggle = document.getElementById("navToggle");
 const headerNav = document.getElementById("headerNav");
 const navLinks = Array.from(document.querySelectorAll(".nav-link"));
+const toTopButton = document.getElementById("toTopButton");
+const dsgvoModal = document.getElementById("dsgvoModal");
+const dsgvoOpenBtn = document.getElementById("dsgvoOpenBtn");
+const dsgvoCloseBtn = document.getElementById("dsgvoCloseBtn");
+const dsgvoCloseBtn2 = document.getElementById("dsgvoCloseBtn2");
 
 /**
  * GROUND TRUTH FUNKTION
@@ -158,6 +163,15 @@ function handleNavigationLinkClick(event) {
 }
 
 /**
+ * Zeigt oder versteckt den "Nach oben"-Button abhängig von der aktuellen Scrollposition.
+ */
+function updateScrollControls() {
+  if (toTopButton) {
+    toTopButton.classList.toggle("is-visible", window.scrollY > 180);
+  }
+}
+
+/**
  * Misst die aktuelle Höhe des fixierten Headers und schreibt den Wert
  * als CSS-Custom-Property `--examples-header-height` ins body-Element.
  * Wird aufgerufen nach Resize und nach dem Öffnen/Schließen der Navigation.
@@ -190,6 +204,12 @@ function setupNavigation() {
     });
   }
 
+  if (toTopButton) {
+    toTopButton.addEventListener("click", () => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  }
+
   document.addEventListener("click", (event) => {
     if (!navToggle || !headerNav || window.innerWidth > 760) {
       return;
@@ -219,8 +239,43 @@ function setupNavigation() {
     }
   });
 
+  window.addEventListener("scroll", updateScrollControls, { passive: true });
+
   setMobileNavigationState(false);
   syncFixedHeaderOffset();
+  updateScrollControls();
+}
+
+function setupDsgvoModal() {
+  if (!dsgvoModal || !dsgvoOpenBtn) {
+    return;
+  }
+
+  const closeModal = () => {
+    dsgvoModal.hidden = true;
+    document.body.style.overflow = "";
+  };
+
+  const openModal = () => {
+    dsgvoModal.hidden = false;
+    document.body.style.overflow = "hidden";
+  };
+
+  dsgvoOpenBtn.addEventListener("click", openModal);
+  dsgvoCloseBtn?.addEventListener("click", closeModal);
+  dsgvoCloseBtn2?.addEventListener("click", closeModal);
+
+  dsgvoModal.addEventListener("click", (event) => {
+    if (event.target === dsgvoModal) {
+      closeModal();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dsgvoModal.hidden) {
+      closeModal();
+    }
+  });
 }
 
 function randn() {
@@ -765,6 +820,7 @@ function wireUI() {
 async function bootstrap() {
   wireUI();
   setupNavigation();
+  setupDsgvoModal();
   try {
     await runFullPipeline();
   } catch (err) {

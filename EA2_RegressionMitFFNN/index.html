@@ -165,6 +165,42 @@
   </section>
 </main>
 
+<footer class="site-footer">
+  <p class="footer-stack">
+    <span>&copy; 2026 Salim Oussayfi</span>
+    <button type="button" class="footer-link" id="dsgvoOpenBtn" aria-haspopup="dialog">Datenschutzerklaerung (DSGVO)</button>
+  </p>
+</footer>
+
+<div id="dsgvoModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="dsgvoModalTitle" hidden>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h2 id="dsgvoModalTitle">Datenschutzerklaerung (DSGVO)</h2>
+      <button type="button" class="modal-close" id="dsgvoCloseBtn" aria-label="Schliessen">&times;</button>
+    </div>
+    <div class="modal-body">
+      <h3>1. Hinweise zur Datenverarbeitung</h3>
+      <p>Diese Anwendung laeuft vollstaendig im Browser und verarbeitet die eingegebenen Daten lokal auf Ihrem Geraet.</p>
+
+      <h3>2. Lokale Speicherung</h3>
+      <p>Datensaetze werden in localStorage und Modelle in IndexedDB gespeichert, damit sie zwischen Sitzungen erhalten bleiben.</p>
+
+      <h3>3. Drittanbieter-Bibliotheken</h3>
+      <p>Es werden TensorFlow.js und Plotly.js per CDN geladen. Dabei kann Ihre IP-Adresse technisch bedingt an die jeweiligen Anbieter uebermittelt werden.</p>
+
+      <h3>4. Ihre Kontrolle</h3>
+      <p>Sie koennen gespeicherte Datensaetze und Modelle jederzeit ueber die Browserdaten oder die bereitgestellten Funktionen entfernen.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-primary" id="dsgvoCloseBtn2">Schliessen</button>
+    </div>
+  </div>
+</div>
+
+<button id="toTopButton" class="to-top-button" type="button" aria-label="Nach oben scrollen">
+  Nach oben
+</button>
+
 <script src="script.js"></script>
 </body>
 </html>
