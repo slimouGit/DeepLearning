@@ -29,10 +29,42 @@ const dsgvoCloseBtn2 = document.getElementById('dsgvoCloseBtn2');
 window.addEventListener('DOMContentLoaded', async () => {
   $('trainingText').value = DEFAULT_TEXT;
   $('backend').textContent = `Backend: ${tf.getBackend()}`;
+  setPrepProgress(0, 'Datenvorbereitung');
+  setTrainProgress(0, 'Training');
   setupNavigation();
   setupDsgvoModal();
   bindEvents();
 });
+
+function setPrepProgress(value, label) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const container = $('prepProgress');
+  if (!container) return;
+  $('prepProgressBar').style.width = `${pct}%`;
+  $('prepProgressValue').textContent = `${pct}%`;
+  if (label) $('prepProgressLabel').textContent = label;
+  container.classList.toggle('is-active', pct > 0 && pct < 100);
+}
+
+function setTrainProgress(value, label) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const container = $('trainProgress');
+  if (!container) return;
+  $('trainProgressBar').style.width = `${pct}%`;
+  $('trainProgressValue').textContent = `${pct}%`;
+  if (label) $('trainProgressLabel').textContent = label;
+  container.classList.toggle('is-active', pct > 0 && pct < 100);
+}
+
+function formatDuration(ms) {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
+  return `${minutes}m ${String(seconds).padStart(2, '0')}s`;
+}
 
 function bindEvents() {
   $('prepareBtn').addEventListener('click', prepareData);
@@ -192,17 +224,23 @@ function tokenize(text) {
   return normalized.split(' ').filter(Boolean);
 }
 
-function prepareData() {
+async function prepareData() {
   disposeDataTensors();
+  setPrepProgress(6, 'Eingabe wird geprueft');
+  await tf.nextFrame();
+
   state.seqLen = Number($('seqLen').value);
   const maxVocab = Number($('maxVocab').value);
   const tokens = tokenize($('trainingText').value);
 
   if (tokens.length < state.seqLen + 10) {
+    setPrepProgress(0, 'Datenvorbereitung');
     setWarning('validationMsg', 'Der Trainingskorpus ist zu kurz. Bitte mehr Text einfügen oder Sequenzlänge reduzieren.');
     return;
   }
   setWarning('validationMsg', '');
+  setPrepProgress(24, 'Haeufigkeiten werden ermittelt');
+  await tf.nextFrame();
 
   const frequencies = new Map();
   for (const token of tokens) frequencies.set(token, (frequencies.get(token) || 0) + 1);
@@ -217,6 +255,8 @@ function prepareData() {
   state.idToToken = state.vocab;
   state.tokenToId = new Map(state.vocab.map((word, index) => [word, index]));
   state.tokens = tokens.map(t => state.tokenToId.has(t) ? t : '<UNK>');
+  setPrepProgress(48, 'Sequenzen werden aufgebaut');
+  await tf.nextFrame();
 
   const xs = [];
   const ys = [];
@@ -232,15 +272,21 @@ function prepareData() {
   state.testY = ys.slice(split);
   state.sequences = xs;
   state.labels = ys;
+  setPrepProgress(72, 'Tensoren werden erstellt');
+  await tf.nextFrame();
 
   state.trainX = tf.tensor2d(trainXs, [trainXs.length, state.seqLen], 'int32');
   state.trainY = tf.oneHot(tf.tensor1d(trainYs, 'int32'), state.vocab.length);
+  setPrepProgress(90, 'Modell wird initialisiert');
+  await tf.nextFrame();
 
   buildModel();
   $('trainBtn').disabled = false;
   $('predictBtn').disabled = true;
   $('nextBtn').disabled = true;
   $('autoBtn').disabled = true;
+  setTrainProgress(0, 'Training');
+  setPrepProgress(100, 'Daten vorbereitet');
   $('dataInfo').textContent = `${tokens.length} Tokens, ${state.vocab.length} Dictionary-Einträge, ${trainXs.length} Trainingssequenzen, ${state.testX.length} Testsequenzen.`;
   $('modelStatus').textContent = 'Status: Daten vorbereitet, Modell untrainiert';
 }
@@ -266,6 +312,8 @@ async function trainModel() {
   if (!state.model || !state.trainX || !state.trainY) return;
   const epochs = Number($('epochs').value);
   const batchSize = 32;
+  const trainStartMs = performance.now();
+  setTrainProgress(4, `Training gestartet (0/${epochs}) - Zeit wird berechnet`);
   $('modelStatus').textContent = 'Status: Training läuft';
   setButtonsDuringTraining(true);
   state.lossHistory = [];
@@ -277,8 +325,14 @@ async function trainModel() {
     shuffle: true,
     callbacks: {
       onEpochEnd: async (epoch, logs) => {
+        const completedEpochs = epoch + 1;
+        const elapsedMs = performance.now() - trainStartMs;
+        const avgEpochMs = elapsedMs / completedEpochs;
+        const remainingMs = Math.max(0, avgEpochMs * (epochs - completedEpochs));
         state.lossHistory.push({ epoch: epoch + 1, loss: logs.loss, acc: logs.acc ?? logs.accuracy ?? 0 });
         updateLossChart();
+        const progress = (completedEpochs / epochs) * 100;
+        setTrainProgress(progress, `Training Epoche ${completedEpochs}/${epochs} - ca. ${formatDuration(remainingMs)} verbleibend`);
         $('modelStatus').textContent = `Status: Epoche ${epoch + 1}/${epochs}, Loss ${logs.loss.toFixed(4)}`;
         await tf.nextFrame();
       }
@@ -292,6 +346,7 @@ async function trainModel() {
   $('predictBtn').disabled = false;
   $('nextBtn').disabled = false;
   $('autoBtn').disabled = false;
+  setTrainProgress(100, 'Training abgeschlossen');
 }
 
 function setButtonsDuringTraining(isTraining) {
@@ -458,6 +513,8 @@ function resetAll() {
   $('metrics').textContent = 'Noch keine Resultate.';
   $('dataInfo').textContent = 'Noch keine Daten vorbereitet.';
   $('modelStatus').textContent = 'Status: nicht trainiert';
+  setPrepProgress(0, 'Datenvorbereitung');
+  setTrainProgress(0, 'Training');
   for (const id of ['trainBtn','predictBtn','nextBtn','autoBtn','stopBtn']) $(id).disabled = true;
   $('prepareBtn').disabled = false;
   if (state.lossChart) { state.lossChart.destroy(); state.lossChart = null; }

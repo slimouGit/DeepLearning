@@ -76,6 +76,24 @@
           <input id="epochs" type="number" min="1" max="200" value="25" />
         </label>
       </div>
+      <div id="prepProgress" class="prep-progress" role="status" aria-live="polite">
+        <div class="prep-progress-head">
+          <span id="prepProgressLabel">Datenvorbereitung</span>
+          <span id="prepProgressValue">0%</span>
+        </div>
+        <div class="prep-progress-track" aria-hidden="true">
+          <span id="prepProgressBar" class="prep-progress-bar" style="width: 0%"></span>
+        </div>
+      </div>
+      <div id="trainProgress" class="prep-progress" role="status" aria-live="polite">
+        <div class="prep-progress-head">
+          <span id="trainProgressLabel">Training</span>
+          <span id="trainProgressValue">0%</span>
+        </div>
+        <div class="prep-progress-track" aria-hidden="true">
+          <span id="trainProgressBar" class="prep-progress-bar" style="width: 0%"></span>
+        </div>
+      </div>
       <div class="actions">
         <button id="prepareBtn">Daten vorbereiten</button>
         <button id="trainBtn" disabled>Modell trainieren</button>
