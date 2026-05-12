@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LSTM Language Model – Next Word Prediction</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-vis@1.5.1/dist/tfjs-vis.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <nav class="project-nav" aria-label="Projektnavigation">
+    <a href="../EA1_Bilderkennung/index.html">Einsendeaufgabe 1</a>
+    <a href="../EA2_RegressionMitFFNN/index.html">Einsendeaufgabe 2</a>
+    <a href="../EA3_LanguageModelMitLSTM/index.html">Einsendeaufgabe 3</a>
+  </nav>
+
+  <main class="container">
+    <div id="examplesFixedHeader" class="examples-fixed-header">
+      <div class="header-main">
+        <div class="header-brand">
+          <h1>LSTM Language Model zur Wortvorhersage</h1>
+          <p>TensorFlow.js-Demo: Tokenisierung, Dictionary, Stacked LSTM, Softmax, Cross Entropy, Top-k-Auswertung und autoregressive Textgenerierung.</p>
+        </div>
+        <button
+          id="navToggle"
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="headerNav"
+          aria-label="Navigation öffnen"
+        >
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+      <nav id="headerNav" class="header-nav" aria-label="Bereichsnavigation">
+        <a class="nav-link" href="#training">Training</a>
+        <a class="nav-link" href="#prediction">Vorhersage</a>
+        <a class="nav-link" href="#results">Resultate</a>
+        <a class="nav-link" href="#discussion">Diskussion</a>
+        <a class="nav-link" href="#documentation">Dokumentation</a>
+      </nav>
+      <div class="status-card">
+        <span id="backend">Backend: –</span>
+        <span id="modelStatus">Status: nicht trainiert</span>
+      </div>
+    </div>
+
+    <section class="card" id="training">
+      <h2>1. Trainingsdaten</h2>
+      <label for="trainingText">Textkorpus</label>
+      <textarea id="trainingText" rows="10" spellcheck="false"></textarea>
+      <div class="grid two">
+        <label>Sequenzlänge
+          <input id="seqLen" type="number" min="2" max="12" value="5" />
+        </label>
+        <label>Max. Vocabulary
+          <input id="maxVocab" type="number" min="20" max="5000" value="500" />
+        </label>
+        <label>LSTM Units je Layer
+          <input id="lstmUnits" type="number" min="16" max="256" value="100" />
+        </label>
+        <label>Embedding-Dimension
+          <input id="embeddingDim" type="number" min="8" max="256" value="64" />
+        </label>
+        <label>Lernrate
+          <select id="learningRate">
+            <option value="0.001" selected>0.001</option>
+            <option value="0.01">0.01</option>
+          </select>
+        </label>
+        <label>Epochs
+          <input id="epochs" type="number" min="1" max="200" value="25" />
+        </label>
+      </div>
+      <div class="actions">
+        <button id="prepareBtn">Daten vorbereiten</button>
+        <button id="trainBtn" disabled>Modell trainieren</button>
+        <button id="resetBtn" class="secondary">Reset</button>
+      </div>
+      <p id="dataInfo" class="hint">Noch keine Daten vorbereitet.</p>
+    </section>
+
+    <section class="card" id="prediction">
+      <h2>2. Vorhersage</h2>
+      <label for="promptInput">Prompt, nur vollständige Wörter mit Leerzeichen</label>
+      <textarea id="promptInput" rows="5" placeholder="z. B. deep learning ist"></textarea>
+      <div class="actions">
+        <button id="predictBtn" disabled>Vorhersage</button>
+        <button id="nextBtn" disabled>Weiter</button>
+        <button id="autoBtn" disabled>Auto: 10 Wörter</button>
+        <button id="stopBtn" class="danger" disabled>Stopp</button>
+      </div>
+      <div id="validationMsg" class="warning" role="alert"></div>
+      <h3>Wahrscheinlichste nächste Wörter</h3>
+      <div id="predictions" class="prediction-list"></div>
+      <div class="help">
+        <strong>Hinweis:</strong> Wörter außerhalb des Dictionary werden als &lt;UNK&gt; behandelt. Die Eingabe sollte aus Tokens bestehen, die durch Leerzeichen getrennt sind.
+      </div>
+    </section>
+
+    <section class="card wide" id="results">
+      <h2>3. Resultate und Visualisierung</h2>
+      <div class="grid two">
+        <div>
+          <canvas id="lossChart" height="160"></canvas>
+        </div>
+        <div id="metrics" class="metrics">Noch keine Resultate.</div>
+      </div>
+    </section>
+
+    <section class="card wide" id="discussion">
+      <h2>Diskussion</h2>
+      <ol>
+        <li>Das Modell lernt lokale Wortfolgen aus dem Trainingskorpus und kann dadurch plausible nächste Wörter vorschlagen.</li>
+        <li>Bei kleinen Datenmengen rekonstruiert das Modell Teile des Trainingskorpus häufig sehr genau.</li>
+        <li>Das ist didaktisch hilfreich, zeigt aber auch ein mögliches Datenschutzproblem bei sensiblen Trainingsdaten.</li>
+        <li>Eine größere Datenmenge verbessert die Generalisierung, erhöht aber Trainingszeit und Speicherbedarf im Browser.</li>
+        <li>Die Sequenzlänge beeinflusst, wie viel Kontext das LSTM für die Vorhersage nutzen kann.</li>
+        <li>Die Top-k-Werte sind oft aussagekräftiger als nur Top-1, weil mehrere Folgewörter sprachlich plausibel sein können.</li>
+        <li>Eine Lernrate von 0.001 ist stabiler; 0.01 kann schneller lernen, aber stärker schwanken.</li>
+        <li>Ein Embedding vor dem LSTM reduziert die starre Integer-Repräsentation der Wörter.</li>
+        <li>Die Anwendung ist bewusst transparent gehalten, damit Training, Loss und Vorhersage nachvollziehbar bleiben.</li>
+        <li>Für produktive Systeme wären größere Daten, Validierung, Speichermanagement und Datenschutzprüfung notwendig.</li>
+      </ol>
+    </section>
+
+    <section class="card wide" id="documentation">
+      <h2>Dokumentation</h2>
+      <h3>Technisch</h3>
+      <p><strong>TensorFlow.js</strong> wird für Modellaufbau, Training und Inferenz im Browser verwendet. <strong>tfjs-vis</strong> kann Trainingsmetriken visualisieren. <strong>Chart.js</strong> visualisiert den Loss-Verlauf als Diagramm.</p>
+      <p>Die Lösung nutzt ein Embedding-Layer, zwei gestapelte LSTM-Layer mit je konfigurierbarer Unit-Zahl und einen Dense-Softmax-Output in Dictionary-Größe. Der Loss ist categoricalCrossentropy, der Optimizer ist Adam.</p>
+      <h3>Fachlich</h3>
+      <p>Der Text wird normalisiert, tokenisiert und in ein Dictionary überführt. Aus jedem Fenster der Länge n wird ein Trainingsbeispiel erzeugt; das Folgewort ist das Target. Die Vorhersage liefert eine Wahrscheinlichkeitsverteilung über alle Wörter im Dictionary. Daraus werden Top-k-Wörter angezeigt und für die automatische Textgenerierung autoregressiv an den Prompt angehängt.</p>
+    </section>
+
+    <footer class="site-footer">
+      <p class="footer-stack">
+        <span>&copy; 2026 Salim Oussayfi</span>
+        <button type="button" class="footer-link" id="dsgvoOpenBtn" aria-haspopup="dialog">Datenschutzerklaerung (DSGVO)</button>
+      </p>
+    </footer>
+
+    <div id="dsgvoModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="dsgvoModalTitle" hidden>
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h2 id="dsgvoModalTitle">Datenschutzerklaerung (DSGVO)</h2>
+          <button type="button" class="modal-close" id="dsgvoCloseBtn" aria-label="Schliessen">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h3>1. Hinweise zur Datenverarbeitung</h3>
+          <p>Diese Anwendung laeuft vollstaendig im Browser. Prompt, Wortlisten und Modellvorhersagen werden lokal verarbeitet.</p>
+
+          <h3>2. Lokale Speicherung</h3>
+          <p>Trainingsdaten und Modellgewichte werden nur im Browser gehalten. Bei einem Reset werden die Daten im Arbeitsspeicher verworfen.</p>
+
+          <h3>3. Drittanbieter-Bibliotheken</h3>
+          <p>TensorFlow.js, tfjs-vis und Chart.js werden per CDN geladen. Dabei kann Ihre IP-Adresse technisch bedingt an die Anbieter uebermittelt werden.</p>
+
+          <h3>4. Ihre Kontrolle</h3>
+          <p>Sie koennen die Seite jederzeit neu laden oder den Reset-Button verwenden, um den aktuellen Zustand zu entfernen.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-primary" id="dsgvoCloseBtn2">Schliessen</button>
+        </div>
+      </div>
+    </div>
+
+    <button id="toTopButton" class="to-top-button" type="button" aria-label="Nach oben scrollen">
+      Nach oben
+    </button>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
