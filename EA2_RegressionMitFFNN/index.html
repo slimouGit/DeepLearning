@@ -40,8 +40,8 @@
       <a class="nav-link" href="#controls">Steuerung</a>
       <a class="nav-link" href="#resultats">Resultate</a>
       <a class="nav-link" href="#loss">Loss-Verlauf</a>
-      <a class="nav-link" href="#diskussion">Diskussion</a>
-      <a class="nav-link" href="#dokumentation">Dokumentation</a>
+      <a class="nav-link" href="#diskussionHeading">Diskussion</a>
+      <a class="nav-link" href="#dokumentationHeading">Dokumentation</a>
     </nav>
   </div>
 
@@ -126,8 +126,8 @@
     </div>
   </section>
 
-  <section class="card" id="diskussion">
-    <h2>Diskussion (max. 10 Sätze)</h2>
+  <h2 id="diskussionHeading" class="section-heading">Diskussion</h2>
+  <section class="card content-card" id="diskussion">
     <ol class="compact-list">
       <li>Ohne Rauschen approximiert das Netz die Funktion stabil, daher liegen Trainings- und Test-MSE meist eng beieinander.</li>
       <li>Mit Label-Rauschen entsteht ein unvermeidbarer Fehleranteil, den das Modell nicht perfekt generalisieren kann.</li>
@@ -142,35 +142,33 @@
     </ol>
   </section>
 
-  <section class="doc-grid" id="dokumentation">
-    <article class="card">
-      <h2>Dokumentation - Technisch</h2>
-      <ul class="compact-list">
-        <li>TensorFlow.js: Definition, Training, Evaluierung, Speichern und Laden der FFNN-Modelle im Browser.</li>
-        <li>Plotly.js: Interaktive Diagramme fuer Datenpunkte, Modellvorhersagen und Loss-Verlaeufe.</li>
-        <li>Web Storage API (localStorage): Speichern und Laden des generierten Datensatzes als JSON.</li>
-        <li>IndexedDB via tfjs-IO: Persistenz der trainierten Modelle direkt im Browser.</li>
-      </ul>
-      <p>
-        Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf,
-        bleibt aber dynamisch und erlaubt fuer den Entwicklungszyklus erneutes Training und Persistenz.
-      </p>
-    </article>
-    <article class="card">
-      <h2>Dokumentation - Fachlich</h2>
-      <p>
-        Zuerst werden 100 gleichverteilte x-Werte in [-2, 2] erzeugt und daraus y-Werte ueber die Ground-Truth berechnet.
-        Danach erfolgt eine zufaellige 50/50 Aufteilung in Train/Test, bevor Gaussian Label-Rauschen mit Varianz 0.05 addiert wird.
-      </p>
-      <p>
-        Drei Modelle mit identischer Architektur (2 Hidden Layer mit je 100 ReLU-Neuronen, linearer Output) werden trainiert:
-        clean (ohne Rauschen), best-fit (verrauschte Daten, moderate Epochenzahl) und overfit (verrauschte Daten, sehr viele Epochen).
-      </p>
-      <p>
-        Zur Bewertung wird Mean Squared Error getrennt fuer Training und Test berechnet; die Testdaten werden nicht zum Training
-        oder zur Hyperparameter-Optimierung genutzt. Die Visualisierung zeigt Daten, Fits und Loss-Verlaeufe nachvollziehbar im 2-Spalten-Layout.
-      </p>
-    </article>
+  <h2 id="dokumentationHeading" class="section-heading">Dokumentation</h2>
+  <section class="card content-card" id="dokumentation">
+    <h3>1) <strong>Technisch</strong></h3>
+    <ul class="compact-list">
+      <li><strong>TensorFlow.js:</strong> Definition, Training, Evaluierung, Speichern und Laden der FFNN-Modelle im Browser.</li>
+      <li><strong>Plotly.js:</strong> Interaktive Diagramme fuer Datenpunkte, Modellvorhersagen und Loss-Verlaeufe.</li>
+      <li><strong>Web Storage API (localStorage):</strong> Speichern und Laden des generierten Datensatzes als JSON.</li>
+      <li><strong>IndexedDB via tfjs-IO:</strong> Persistenz der trainierten Modelle direkt im Browser.</li>
+    </ul>
+    <p>
+      Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf,
+      bleibt aber dynamisch und erlaubt fuer den Entwicklungszyklus erneutes Training und Persistenz.
+    </p>
+
+    <h3>2) <strong>Fachlich</strong></h3>
+    <p>
+      Zuerst werden 100 gleichverteilte x-Werte in [-2, 2] erzeugt und daraus y-Werte ueber die Ground-Truth berechnet.
+      Danach erfolgt eine zufaellige 50/50 Aufteilung in Train/Test, bevor Gaussian Label-Rauschen mit Varianz 0.05 addiert wird.
+    </p>
+    <p>
+      Drei Modelle mit identischer Architektur (2 Hidden Layer mit je 100 ReLU-Neuronen, linearer Output) werden trainiert:
+      clean (ohne Rauschen), best-fit (verrauschte Daten, moderate Epochenzahl) und overfit (verrauschte Daten, sehr viele Epochen).
+    </p>
+    <p>
+      Zur Bewertung wird Mean Squared Error getrennt fuer Training und Test berechnet; die Testdaten werden nicht zum Training
+      oder zur Hyperparameter-Optimierung genutzt. Die Visualisierung zeigt Daten, Fits und Loss-Verlaeufe nachvollziehbar im 2-Spalten-Layout.
+    </p>
   </section>
 </main>
 
