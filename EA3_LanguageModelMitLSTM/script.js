@@ -228,7 +228,18 @@ function tokenize(text) {
 
 async function prepareData() {
   disposeDataTensors();
-  setPrepProgress(6, 'Eingabe wird geprueft');
+  const prepStartMs = performance.now();
+  const updatePrep = (value, label) => {
+    let nextLabel = label;
+    if (value > 1 && value < 100) {
+      const elapsedMs = performance.now() - prepStartMs;
+      const remainingMs = Math.max(0, (elapsedMs / value) * (100 - value));
+      nextLabel = `${label} - ca. ${formatDuration(remainingMs)} verbleibend`;
+    }
+    setPrepProgress(value, nextLabel);
+  };
+
+  updatePrep(2, 'Eingabe wird geprueft');
   await tf.nextFrame();
 
   state.seqLen = Number($('seqLen').value);
@@ -241,11 +252,21 @@ async function prepareData() {
     return;
   }
   setWarning('validationMsg', '');
-  setPrepProgress(24, 'Haeufigkeiten werden ermittelt');
+  updatePrep(6, 'Haeufigkeiten werden ermittelt');
   await tf.nextFrame();
 
   const frequencies = new Map();
-  for (const token of tokens) frequencies.set(token, (frequencies.get(token) || 0) + 1);
+  const frequencyChunk = Math.max(1, Math.floor(tokens.length / 35));
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    frequencies.set(token, (frequencies.get(token) || 0) + 1);
+
+    if (i === tokens.length - 1 || i % frequencyChunk === 0) {
+      const progress = 6 + ((i + 1) / tokens.length) * 20;
+      updatePrep(progress, 'Haeufigkeiten werden ermittelt');
+      await tf.nextFrame();
+    }
+  }
 
   const special = ['<PAD>', '<UNK>'];
   const vocabWords = [...frequencies.entries()]
@@ -256,15 +277,29 @@ async function prepareData() {
   state.vocab = [...special, ...vocabWords];
   state.idToToken = state.vocab;
   state.tokenToId = new Map(state.vocab.map((word, index) => [word, index]));
-  state.tokens = tokens.map(t => state.tokenToId.has(t) ? t : '<UNK>');
-  setPrepProgress(48, 'Sequenzen werden aufgebaut');
+  state.tokens = [];
+  const tokenMapChunk = Math.max(1, Math.floor(tokens.length / 30));
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    state.tokens.push(state.tokenToId.has(token) ? token : '<UNK>');
+
+    if (i === tokens.length - 1 || i % tokenMapChunk === 0) {
+      const progress = 28 + ((i + 1) / tokens.length) * 12;
+      updatePrep(progress, 'Dictionary wird aufgebaut');
+      await tf.nextFrame();
+    }
+  }
+
+  updatePrep(42, 'Sequenzen werden aufgebaut');
   await tf.nextFrame();
 
   // Training mit gleicher Padding-Logik wie promptToIds
   const xs = [];
   const ys = [];
-  
-  for (let i = 0; i < state.tokens.length - 1; i++) {
+
+  const sequenceCount = Math.max(1, state.tokens.length - 1);
+  const sequenceChunk = Math.max(1, Math.floor(sequenceCount / 35));
+  for (let i = 0; i < sequenceCount; i++) {
     // Für jeden Position i: nehme die letzten seqLen tokens VOR diesem index als input
     const inputTokens = state.tokens.slice(Math.max(0, i - state.seqLen + 1), i + 1);
     const ids = inputTokens.map(idForToken);
@@ -275,7 +310,16 @@ async function prepareData() {
     
     // Output: das nächste token
     ys.push(idForToken(state.tokens[i + 1]));
+
+    if (i === sequenceCount - 1 || i % sequenceChunk === 0) {
+      const progress = 42 + ((i + 1) / sequenceCount) * 40;
+      updatePrep(progress, 'Sequenzen werden aufgebaut');
+      await tf.nextFrame();
+    }
   }
+
+  updatePrep(84, 'Train/Test Split wird erstellt');
+  await tf.nextFrame();
 
   const split = Math.max(1, Math.floor(xs.length * 0.8));
   const trainXs = xs.slice(0, split);
@@ -284,12 +328,15 @@ async function prepareData() {
   state.testY = ys.slice(split);
   state.sequences = xs;
   state.labels = ys;
-  setPrepProgress(72, 'Tensoren werden erstellt');
+  updatePrep(88, 'Tensoren werden erstellt');
   await tf.nextFrame();
 
   state.trainX = tf.tensor2d(trainXs, [trainXs.length, state.seqLen], 'int32');
+  updatePrep(93, 'Tensoren werden erstellt');
+  await tf.nextFrame();
+
   state.trainY = tf.oneHot(tf.tensor1d(trainYs, 'int32'), state.vocab.length);
-  setPrepProgress(90, 'Modell wird initialisiert');
+  updatePrep(97, 'Modell wird initialisiert');
   await tf.nextFrame();
 
   buildModel();
