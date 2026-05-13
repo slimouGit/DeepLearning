@@ -150,9 +150,10 @@
       <h2>Dokumentation</h2>
       <h3>Technisch</h3>
       <p><strong>TensorFlow.js</strong> wird für Modellaufbau, Training und Inferenz im Browser verwendet. <strong>tfjs-vis</strong> kann Trainingsmetriken visualisieren. <strong>Chart.js</strong> visualisiert den Loss-Verlauf als Diagramm.</p>
-      <p>Die Lösung nutzt ein Embedding-Layer, zwei gestapelte LSTM-Layer mit je konfigurierbarer Unit-Zahl und einen Dense-Softmax-Output in Dictionary-Größe. Der Loss ist categoricalCrossentropy, der Optimizer ist Adam.</p>
+      <p>Die Lösung nutzt ein Embedding-Layer, zwei gestapelte LSTM-Layer mit je konfigurierbarer Unit-Zahl und einen Dense-Softmax-Output in Dictionary-Größe. Der Loss ist categoricalCrossentropy, der Optimizer ist Adam. Die Datenvorbereitung zeigt einen gleichmäßigeren Fortschritt inklusive geschätzter Restzeit (ETA) pro Verarbeitungsschritt.</p>
       <h3>Fachlich</h3>
       <p>Der Text wird normalisiert, tokenisiert und in ein Dictionary überführt. Aus jedem Fenster der Länge n wird ein Trainingsbeispiel erzeugt; das Folgewort ist das Target. Die Vorhersage liefert eine Wahrscheinlichkeitsverteilung über alle Wörter im Dictionary. Daraus werden Top-k-Wörter angezeigt und für die automatische Textgenerierung autoregressiv an den Prompt angehängt.</p>
+      <p>Für die automatische Generierung wurde eine Satzgrenzen-Logik ergänzt: Sobald als nächstes Token ein Satzendezeichen (., !, ?) vorhergesagt wird, stoppt der Auto-Modus. Dadurch werden unnatürliche Übergänge in den Folgesatz reduziert und die Ausgabe bleibt näher am semantischen Kontext des begonnenen Satzes.</p>
     </section>
 
     <footer class="site-footer">

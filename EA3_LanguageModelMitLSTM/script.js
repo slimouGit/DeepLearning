@@ -501,6 +501,10 @@ function selectNextWord(predictions) {
   return predictions[0].word;
 }
 
+function isSentenceBoundaryToken(token) {
+  return token === '.' || token === '!' || token === '?';
+}
+
 async function acceptBestWord() {
   const prompt = $('promptInput').value;
   const msg = validatePrompt(prompt);
@@ -518,6 +522,7 @@ async function autoGenerate() {
   $('autoBtn').disabled = true;
   $('stopBtn').disabled = false;
   let count = 0;
+  let stoppedAtBoundary = false;
   state.autoTimer = true;
   while (state.autoTimer && count < 10) {
     const prompt = $('promptInput').value;
@@ -531,8 +536,19 @@ async function autoGenerate() {
     if (!nextWord) break;
     appendWord(nextWord, false);
     count++;
+
+    if (isSentenceBoundaryToken(nextWord)) {
+      stoppedAtBoundary = true;
+      break;
+    }
+
     await sleep(350);
   }
+
+  if (stoppedAtBoundary) {
+    setWarning('validationMsg', 'Auto-Generierung am Satzende gestoppt.');
+  }
+
   await predictFromPrompt();
   $('autoBtn').disabled = false;
   $('stopBtn').disabled = true;
