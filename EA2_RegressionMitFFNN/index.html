@@ -56,6 +56,15 @@
       <button id="btnLoadModels" type="button">Modelle laden</button>
       <button id="btnTestModels" type="button">Modelle testen (MSE)</button>
     </div>
+    <div id="pipelineProgress" class="prep-progress" role="status" aria-live="polite">
+      <div class="prep-progress-head">
+        <span id="pipelineProgressLabel">Initialisierung</span>
+        <span id="pipelineProgressValue">0%</span>
+      </div>
+      <div class="prep-progress-track" aria-hidden="true">
+        <span id="pipelineProgressBar" class="prep-progress-bar" style="width: 0%"></span>
+      </div>
+    </div>
     <p id="status" class="status">Initialisierung...</p>
   </section>
 

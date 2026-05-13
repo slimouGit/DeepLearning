@@ -103,6 +103,39 @@ function setStatus(message) {
   }
 }
 
+function formatDuration(ms) {
+  const totalSeconds = Math.max(0, Math.round(ms / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes === 0) {
+    return `${seconds}s`;
+  }
+  return `${minutes}m ${String(seconds).padStart(2, "0")}s`;
+}
+
+function setPipelineProgress(value, label) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const container = document.getElementById("pipelineProgress");
+  if (!container) return;
+
+  const bar = document.getElementById("pipelineProgressBar");
+  const valueEl = document.getElementById("pipelineProgressValue");
+  const labelEl = document.getElementById("pipelineProgressLabel");
+
+  if (bar) bar.style.width = `${pct}%`;
+  if (valueEl) valueEl.textContent = `${pct}%`;
+  if (labelEl && label) labelEl.textContent = label;
+  container.classList.toggle("is-active", pct > 0 && pct < 100);
+}
+
+function setControlsDisabled(disabled) {
+  const controlIds = ["btnRun", "btnSaveData", "btnLoadData", "btnSaveModels", "btnLoadModels", "btnTestModels"];
+  controlIds.forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.disabled = Boolean(disabled);
+  });
+}
+
 /**
  * NAVIGATION FUNKTIONEN
  * Responsive Hamburger-Menü für mobile Geräte
@@ -409,7 +442,7 @@ function createModel() {
  * @param {number} epochs - Anzahl der Durchläufe durch den Datensatz
  * @returns {number[]} Loss-Werte pro Epoche für Visualisierung
  */
-async function trainModel(model, x, y, epochs) {
+async function trainModel(model, x, y, epochs, onEpochEnd) {
   const xs = tf.tensor2d(x, [x.length, 1]);
   const ys = tf.tensor2d(y, [y.length, 1]);
 
@@ -418,7 +451,15 @@ async function trainModel(model, x, y, epochs) {
     epochs,
     batchSize: CONFIG.batchSize,
     shuffle: true,
-    verbose: 0
+    verbose: 0,
+    callbacks: {
+      onEpochEnd: async (epoch, logs) => {
+        if (typeof onEpochEnd === "function") {
+          onEpochEnd(epoch + 1, epochs, logs || {});
+        }
+        await tf.nextFrame();
+      }
+    }
   });
 
   // Memory-Cleanup: TensorFlow Objekte freigeben
@@ -637,15 +678,34 @@ async function renderPredictions(split) {
   plotPrediction("r4_test", split.test.x, split.test.yN, curveOverfit, "Test noisy");
 }
 
-async function trainAllModels(split) {
+async function trainAllModels(split, onProgress) {
+  const totalEpochs = CONFIG.cleanEpochs + CONFIG.bestEpochs + CONFIG.overfitEpochs;
+  let completedEpochs = 0;
+  const reportStage = (stageLabel) => (currentEpoch, stageTotalEpochs) => {
+    const alreadyDone = completedEpochs;
+    const absoluteDone = alreadyDone + currentEpoch;
+    if (typeof onProgress === "function") {
+      onProgress({
+        phase: "training",
+        stageLabel,
+        stageEpoch: currentEpoch,
+        stageTotalEpochs,
+        absoluteDone,
+        totalEpochs
+      });
+    }
+  };
+
   setStatus("Trainiere clean Modell...");
   appState.models.clean = createModel();
   appState.losses.clean = await trainModel(
     appState.models.clean,
     split.train.x,
     split.train.y,
-    CONFIG.cleanEpochs
+    CONFIG.cleanEpochs,
+    reportStage("Trainiere clean Modell")
   );
+  completedEpochs += CONFIG.cleanEpochs;
 
   setStatus("Trainiere best-fit Modell...");
   appState.models.best = createModel();
@@ -653,8 +713,10 @@ async function trainAllModels(split) {
     appState.models.best,
     split.train.x,
     split.train.yN,
-    CONFIG.bestEpochs
+    CONFIG.bestEpochs,
+    reportStage("Trainiere best-fit Modell")
   );
+  completedEpochs += CONFIG.bestEpochs;
 
   setStatus("Trainiere overfit Modell...");
   appState.models.overfit = createModel();
@@ -662,7 +724,8 @@ async function trainAllModels(split) {
     appState.models.overfit,
     split.train.x,
     split.train.yN,
-    CONFIG.overfitEpochs
+    CONFIG.overfitEpochs,
+    reportStage("Trainiere overfit Modell")
   );
 }
 
@@ -729,17 +792,49 @@ async function testModelsOnly() {
 }
 
 async function runFullPipeline() {
-  setStatus("Erzeuge Daten und splitte in Train/Test...");
-  const baseData = createDataSet(CONFIG.N, CONFIG.noiseVar);
-  appState.dataSplit = splitDataRandom(baseData, CONFIG.trainFraction);
-  plotDataSets(appState.dataSplit);
+  const startMs = performance.now();
+  const updateProgress = (value, label) => {
+    let displayLabel = label;
+    if (value > 1 && value < 100) {
+      const elapsedMs = performance.now() - startMs;
+      const remainingMs = Math.max(0, (elapsedMs / value) * (100 - value));
+      displayLabel = `${label} - ca. ${formatDuration(remainingMs)} verbleibend`;
+    }
+    setPipelineProgress(value, displayLabel);
+  };
 
-  await trainAllModels(appState.dataSplit);
-  renderLossPlots();
-  await evaluateAllMse(appState.dataSplit);
-  await renderPredictions(appState.dataSplit);
-  renderMseLines();
-  setStatus("Fertig: R1-R4, Loss-Plots und MSE sind aktualisiert.");
+  setControlsDisabled(true);
+  updateProgress(2, "Erzeuge Daten und splitte in Train/Test");
+
+  try {
+    setStatus("Erzeuge Daten und splitte in Train/Test...");
+    const baseData = createDataSet(CONFIG.N, CONFIG.noiseVar);
+    appState.dataSplit = splitDataRandom(baseData, CONFIG.trainFraction);
+    plotDataSets(appState.dataSplit);
+    updateProgress(12, "Datensatz erzeugt");
+
+    await trainAllModels(appState.dataSplit, ({ stageLabel, stageEpoch, stageTotalEpochs, absoluteDone, totalEpochs }) => {
+      const trainProgress = (absoluteDone / totalEpochs) * 74;
+      const value = 12 + trainProgress;
+      updateProgress(value, `${stageLabel} (${stageEpoch}/${stageTotalEpochs})`);
+      setStatus(`${stageLabel}... (${stageEpoch}/${stageTotalEpochs})`);
+    });
+
+    updateProgress(88, "Erzeuge Loss-Plots");
+    renderLossPlots();
+
+    updateProgress(93, "Berechne MSE");
+    await evaluateAllMse(appState.dataSplit);
+
+    updateProgress(97, "Erzeuge Vorhersage-Plots");
+    await renderPredictions(appState.dataSplit);
+    renderMseLines();
+
+    updateProgress(100, "Pipeline abgeschlossen");
+    setStatus("Fertig: R1-R4, Loss-Plots und MSE sind aktualisiert.");
+  } finally {
+    setControlsDisabled(false);
+  }
 }
 
 function wireUI() {
