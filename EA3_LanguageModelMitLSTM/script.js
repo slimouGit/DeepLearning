@@ -1,13 +1,16 @@
-const DEFAULT_TEXT = `deep learning ist ein teilgebiet der künstlichen intelligenz . neuronale netze lernen aus daten .
-Ein language model lernt wahrscheinliche wortfolgen aus einem text .
-Das modell sagt das nächste wort auf basis der vorherigen wörter voraus .
-Ein rekurrentes neuronales netz verarbeitet sequenzen .
-Ein long short term memory netz kann informationen über mehrere schritte speichern .
-Beim training werden die gewichte angepasst .
-Der softmax output liefert eine wahrscheinlichkeitsverteilung über das dictionary .
-Die cross entropy misst den fehler zwischen zielwort und vorhergesagter verteilung .
-Mit mehr daten kann ein neuronales netz bessere muster lernen .
-Bei sehr wenigen daten kann ein modell den trainings text auswendig lernen .`;
+const DEFAULT_TEXT = `deep learning ist ein teilgebiet der künstlichen intelligenz
+deep learning ist ein bereich von künstlichen netzen
+deep learning ist ein ansatz für mustererkennung
+neuronale netze lernen aus daten
+ein language model lernt wahrscheinliche wortfolgen
+ein language model sagt das nächste wort voraus
+ein rekurrentes neuronales netz verarbeitet sequenzen
+ein long short term memory netz speichert informationen
+beim training werden die gewichte angepasst
+der softmax output liefert eine wahrscheinlichkeitsverteilung
+die cross entropy misst den fehler
+mit mehr daten kann ein netz bessere muster lernen
+bei wenigen daten kann ein modell overfitting haben`;
 
 const state = {
   tokens: [], vocab: [], tokenToId: new Map(), idToToken: [], sequences: [], labels: [],
@@ -258,11 +261,21 @@ async function prepareData() {
   setPrepProgress(48, 'Sequenzen werden aufgebaut');
   await tf.nextFrame();
 
+  // Training mit gleicher Padding-Logik wie promptToIds
   const xs = [];
   const ys = [];
-  for (let i = 0; i < state.tokens.length - state.seqLen; i++) {
-    xs.push(state.tokens.slice(i, i + state.seqLen).map(idForToken));
-    ys.push(idForToken(state.tokens[i + state.seqLen]));
+  
+  for (let i = 0; i < state.tokens.length - 1; i++) {
+    // Für jeden Position i: nehme die letzten seqLen tokens VOR diesem index als input
+    const inputTokens = state.tokens.slice(Math.max(0, i - state.seqLen + 1), i + 1);
+    const ids = inputTokens.map(idForToken);
+    
+    // Padding am Anfang wie in promptToIds
+    while (ids.length < state.seqLen) ids.unshift(idForToken('<PAD>'));
+    xs.push(ids.slice(-state.seqLen));
+    
+    // Output: das nächste token
+    ys.push(idForToken(state.tokens[i + 1]));
   }
 
   const split = Math.max(1, Math.floor(xs.length * 0.8));
@@ -375,25 +388,37 @@ async function predictFromPrompt() {
   setWarning('validationMsg', msg);
   if (msg) return [];
 
+  const candidates = await predictCandidates(prompt);
+  const top = candidates.slice(0, 10);
+  state.lastPredictions = top;
+  renderPredictions(top);
+  return top;
+}
+
+async function predictCandidates(prompt) {
   const ids = promptToIds(prompt);
   const input = tf.tensor2d([ids], [1, state.seqLen], 'int32');
   const probsTensor = state.model.predict(input);
   const probs = await probsTensor.data();
   input.dispose();
   probsTensor.dispose();
-
-  const top = topK(Array.from(probs), 10);
-  state.lastPredictions = top;
-  renderPredictions(top);
-  return top;
+  return topK(Array.from(probs), state.vocab.length);
 }
 
 function topK(values, k) {
-  return values
+  const candidates = values
     .map((prob, id) => ({ id, word: state.idToToken[id], prob }))
-    .filter(x => x.word !== '<PAD>' && x.word !== '<UNK>')
-    .sort((a, b) => b.prob - a.prob)
-    .slice(0, k);
+    .sort((a, b) => b.prob - a.prob);
+  
+  // Erst filtern ohne PAD/UNK
+  let filtered = candidates.filter(x => x.word !== '<PAD>' && x.word !== '<UNK>');
+  
+  // Falls zu wenig Kandidaten, auch UNK hinzunehmen
+  if (filtered.length < k) {
+    filtered = candidates.filter(x => x.word !== '<PAD>');
+  }
+  
+  return filtered.slice(0, k);
 }
 
 function renderPredictions(items) {
@@ -425,9 +450,79 @@ function appendWord(word, repredict) {
   if (repredict) predictFromPrompt();
 }
 
+function getCorpusContinuationStats(promptTokens) {
+  if (!promptTokens.length || state.tokens.length < 2) return null;
+
+  const maxContext = Math.min(state.seqLen, promptTokens.length);
+  for (let contextSize = maxContext; contextSize >= 1; contextSize--) {
+    const suffix = promptTokens.slice(-contextSize);
+    const counts = new Map();
+
+    for (let i = 0; i <= state.tokens.length - contextSize - 1; i++) {
+      let isMatch = true;
+      for (let j = 0; j < contextSize; j++) {
+        if (state.tokens[i + j] !== suffix[j]) {
+          isMatch = false;
+          break;
+        }
+      }
+      if (!isMatch) continue;
+
+      const nextWord = state.tokens[i + contextSize];
+      counts.set(nextWord, (counts.get(nextWord) || 0) + 1);
+    }
+
+    if (counts.size > 0) {
+      const maxCount = Math.max(...counts.values());
+      return { counts, maxCount, contextSize };
+    }
+  }
+
+  return null;
+}
+
+function selectNextWord(predictions, prompt) {
+  if (!predictions.length) return null;
+
+  const promptTokens = tokenize(prompt);
+  const corpusStats = getCorpusContinuationStats(promptTokens);
+
+  const lastWord = promptTokens[promptTokens.length - 1] || '';
+  const recent = promptTokens.slice(-5);
+
+  const ranked = predictions
+    .map(item => {
+      let score = item.prob;
+
+      if (item.word === lastWord) score *= 0.08;
+      const repeatsInRecent = recent.filter(word => word === item.word).length;
+      if (repeatsInRecent === 1) score *= 0.55;
+      if (repeatsInRecent >= 2) score *= 0.2;
+      return { word: item.word, score };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // Kontextkonsistente Fortsetzung: Wenn der Korpus fuer den aktuellen Kontext
+  // Folgewörter kennt, nimmt das Modell das beste davon.
+  if (corpusStats) {
+    const constrained = ranked.filter(item => corpusStats.counts.has(item.word));
+    if (constrained.length) return constrained[0].word;
+  }
+
+  return ranked.length ? ranked[0].word : predictions[0].word;
+}
+
 async function acceptBestWord() {
-  if (!state.lastPredictions.length) await predictFromPrompt();
-  if (state.lastPredictions.length) appendWord(state.lastPredictions[0].word, true);
+  const prompt = $('promptInput').value;
+  const msg = validatePrompt(prompt);
+  setWarning('validationMsg', msg);
+  if (msg) return;
+
+  const candidates = await predictCandidates(prompt);
+  if (candidates.length) {
+    const nextWord = selectNextWord(candidates, prompt);
+    if (nextWord) appendWord(nextWord, true);
+  }
 }
 
 async function autoGenerate() {
@@ -436,9 +531,16 @@ async function autoGenerate() {
   let count = 0;
   state.autoTimer = true;
   while (state.autoTimer && count < 10) {
-    const predictions = await predictFromPrompt();
-    if (!predictions.length) break;
-    appendWord(predictions[0].word, false);
+    const prompt = $('promptInput').value;
+    const msg = validatePrompt(prompt);
+    setWarning('validationMsg', msg);
+    if (msg) break;
+
+    const candidates = await predictCandidates(prompt);
+    if (!candidates.length) break;
+    const nextWord = selectNextWord(candidates, prompt);
+    if (!nextWord) break;
+    appendWord(nextWord, false);
     count++;
     await sleep(350);
   }
