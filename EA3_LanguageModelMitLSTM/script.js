@@ -1,16 +1,15 @@
-const DEFAULT_TEXT = `deep learning ist ein teilgebiet der künstlichen intelligenz
-deep learning ist ein bereich von künstlichen netzen
-deep learning ist ein ansatz für mustererkennung
-neuronale netze lernen aus daten
-ein language model lernt wahrscheinliche wortfolgen
-ein language model sagt das nächste wort voraus
-ein rekurrentes neuronales netz verarbeitet sequenzen
-ein long short term memory netz speichert informationen
-beim training werden die gewichte angepasst
-der softmax output liefert eine wahrscheinlichkeitsverteilung
-die cross entropy misst den fehler
-mit mehr daten kann ein netz bessere muster lernen
-bei wenigen daten kann ein modell overfitting haben`;
+const DEFAULT_TEXT = `deep learning ist ein teilgebiet der kuenstlichen intelligenz . neuronale netze lernen aus daten .
+deep learning ist ein teilgebiet der kuenstlichen intelligenz . daten sind fuer das training entscheidend .
+deep learning ist ein teilgebiet der kuenstlichen intelligenz . modelle lernen aus vielen beispielen .
+ein language model lernt wahrscheinliche wortfolgen aus einem text .
+das modell sagt das naechste wort auf basis der vorherigen woerter voraus .
+ein rekurrentes neuronales netz verarbeitet sequenzen .
+ein long short term memory netz kann informationen ueber mehrere schritte speichern .
+beim training werden die gewichte angepasst .
+der softmax output liefert eine wahrscheinlichkeitsverteilung ueber das dictionary .
+die cross entropy misst den fehler zwischen zielwort und vorhergesagter verteilung .
+mit mehr daten kann ein neuronales netz bessere muster lernen .
+bei sehr wenigen daten kann ein modell den trainings text auswendig lernen .`;
 
 const state = {
   tokens: [], vocab: [], tokenToId: new Map(), idToToken: [], sequences: [], labels: [],
@@ -450,66 +449,9 @@ function appendWord(word, repredict) {
   if (repredict) predictFromPrompt();
 }
 
-function getCorpusContinuationStats(promptTokens) {
-  if (!promptTokens.length || state.tokens.length < 2) return null;
-
-  const maxContext = Math.min(state.seqLen, promptTokens.length);
-  for (let contextSize = maxContext; contextSize >= 1; contextSize--) {
-    const suffix = promptTokens.slice(-contextSize);
-    const counts = new Map();
-
-    for (let i = 0; i <= state.tokens.length - contextSize - 1; i++) {
-      let isMatch = true;
-      for (let j = 0; j < contextSize; j++) {
-        if (state.tokens[i + j] !== suffix[j]) {
-          isMatch = false;
-          break;
-        }
-      }
-      if (!isMatch) continue;
-
-      const nextWord = state.tokens[i + contextSize];
-      counts.set(nextWord, (counts.get(nextWord) || 0) + 1);
-    }
-
-    if (counts.size > 0) {
-      const maxCount = Math.max(...counts.values());
-      return { counts, maxCount, contextSize };
-    }
-  }
-
-  return null;
-}
-
-function selectNextWord(predictions, prompt) {
+function selectNextWord(predictions) {
   if (!predictions.length) return null;
-
-  const promptTokens = tokenize(prompt);
-  const corpusStats = getCorpusContinuationStats(promptTokens);
-
-  const lastWord = promptTokens[promptTokens.length - 1] || '';
-  const recent = promptTokens.slice(-5);
-
-  const ranked = predictions
-    .map(item => {
-      let score = item.prob;
-
-      if (item.word === lastWord) score *= 0.08;
-      const repeatsInRecent = recent.filter(word => word === item.word).length;
-      if (repeatsInRecent === 1) score *= 0.55;
-      if (repeatsInRecent >= 2) score *= 0.2;
-      return { word: item.word, score };
-    })
-    .sort((a, b) => b.score - a.score);
-
-  // Kontextkonsistente Fortsetzung: Wenn der Korpus fuer den aktuellen Kontext
-  // Folgewörter kennt, nimmt das Modell das beste davon.
-  if (corpusStats) {
-    const constrained = ranked.filter(item => corpusStats.counts.has(item.word));
-    if (constrained.length) return constrained[0].word;
-  }
-
-  return ranked.length ? ranked[0].word : predictions[0].word;
+  return predictions[0].word;
 }
 
 async function acceptBestWord() {
@@ -520,7 +462,7 @@ async function acceptBestWord() {
 
   const candidates = await predictCandidates(prompt);
   if (candidates.length) {
-    const nextWord = selectNextWord(candidates, prompt);
+    const nextWord = selectNextWord(candidates);
     if (nextWord) appendWord(nextWord, true);
   }
 }
@@ -538,7 +480,7 @@ async function autoGenerate() {
 
     const candidates = await predictCandidates(prompt);
     if (!candidates.length) break;
-    const nextWord = selectNextWord(candidates, prompt);
+    const nextWord = selectNextWord(candidates);
     if (!nextWord) break;
     appendWord(nextWord, false);
     count++;
