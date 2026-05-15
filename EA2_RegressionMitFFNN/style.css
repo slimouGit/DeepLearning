@@ -515,6 +515,24 @@ section {
   margin-bottom: 30px;
 }
 
+.dev-controls {
+  margin-bottom: 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px 12px;
+}
+
+.dev-controls summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+}
+
+.dev-controls .hint {
+  margin: 10px 0 8px;
+}
+
 .controls .buttons {
   display: flex;
   flex-wrap: wrap;

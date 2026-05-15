@@ -61,6 +61,9 @@ Typisches Zeichen:
 - Modelle laden: Laedt gespeicherte Modelle und bewertet sie auf dem aktuellen Datensatz.
 - Modelle testen (MSE): Berechnet nur die MSE-Werte (Train/Test) fuer vorhandene Modelle.
 
+Hinweis zum Testen:
+Der Standardablauf startet beim Laden der Seite automatisch. Optional kannst du ueber das Steuerungspanel einzelne Pipeline-Schritte gezielt und wiederholbar ausloesen (z. B. neu trainieren, persistierte Daten/Modelle laden oder reine MSE-Tests ohne Retraining), indem du die entsprechenden Buttons verwendest.
+
 ## Technik in kurz
 - TensorFlow.js: Bauen und Trainieren der neuronalen Netze im Browser.
 - Plotly.js: Diagramme fuer Daten, Vorhersagen und Loss.

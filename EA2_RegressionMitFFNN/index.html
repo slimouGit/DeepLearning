@@ -47,15 +47,19 @@
 
   <section class="controls" id="controls">
     <h2 class="section-heading">Steuerung</h2>
-    <p class="hint">Berechne, speichere und lade den Datensatz und die trainierten Modelle. Teste die Modelle auf den aktuellen Daten.</p>
-    <div class="buttons">
-      <button id="btnRun" type="button">Alles neu berechnen</button>
-      <button id="btnSaveData" type="button">Datensatz speichern</button>
-      <button id="btnLoadData" type="button">Datensatz laden</button>
-      <button id="btnSaveModels" type="button">Modelle speichern</button>
-      <button id="btnLoadModels" type="button">Modelle laden</button>
-      <button id="btnTestModels" type="button">Modelle testen (MSE)</button>
-    </div>
+    <details class="dev-controls">
+      <summary>Entwickler-Steuerung ein-/ausklappen</summary>
+      <p class="hint">Berechne, speichere und lade den Datensatz und die trainierten Modelle. Teste die Modelle auf den aktuellen Daten.</p>
+      <div class="buttons">
+        <button id="btnRun" type="button">Alles neu berechnen</button>
+        <button id="btnSaveData" type="button">Datensatz speichern</button>
+        <button id="btnLoadData" type="button">Datensatz laden</button>
+        <button id="btnSaveModels" type="button">Modelle speichern</button>
+        <button id="btnLoadModels" type="button">Modelle laden</button>
+        <button id="btnTestModels" type="button">Modelle testen (MSE)</button>
+      </div>
+    </details>
+
     <div id="pipelineProgress" class="prep-progress" role="status" aria-live="polite">
       <div class="prep-progress-head">
         <span id="pipelineProgressLabel">Initialisierung</span>
@@ -153,8 +157,9 @@
     </ul>
     <p>
       Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf,
-      bleibt aber dynamisch und erlaubt fuer den Entwicklungszyklus erneutes Training und Persistenz.
-    </p>
+      bleibt aber dynamisch und erlaubt fuer den Entwicklungszyklus ueber das Steuerungspanel
+      das gezielte Ausloesen einzelner Schritte per Button (Retraining, Laden/Speichern, MSE-Test ohne Retraining).
+   </p>
 
     <h3>2) <strong>Fachlich</strong></h3>
     <p>

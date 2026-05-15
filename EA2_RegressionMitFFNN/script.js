@@ -838,7 +838,14 @@ async function runFullPipeline() {
 }
 
 function wireUI() {
-  document.getElementById("btnRun").addEventListener("click", async () => {
+  const bindClick = (id, handler) => {
+    const element = document.getElementById(id);
+    if (element) {
+      element.addEventListener("click", handler);
+    }
+  };
+
+  bindClick("btnRun", async () => {
     try {
       await runFullPipeline();
     } catch (err) {
@@ -847,7 +854,7 @@ function wireUI() {
     }
   });
 
-  document.getElementById("btnSaveData").addEventListener("click", () => {
+  bindClick("btnSaveData", () => {
     try {
       saveDataSet();
       setStatus("Datensatz wurde in localStorage gespeichert.");
@@ -857,7 +864,7 @@ function wireUI() {
     }
   });
 
-  document.getElementById("btnLoadData").addEventListener("click", async () => {
+  bindClick("btnLoadData", async () => {
     try {
       loadDataSet();
       plotDataSets(appState.dataSplit);
@@ -873,7 +880,7 @@ function wireUI() {
     }
   });
 
-  document.getElementById("btnSaveModels").addEventListener("click", async () => {
+  bindClick("btnSaveModels", async () => {
     try {
       await saveModels();
       setStatus("Modelle in IndexedDB gespeichert.");
@@ -883,7 +890,7 @@ function wireUI() {
     }
   });
 
-  document.getElementById("btnLoadModels").addEventListener("click", async () => {
+  bindClick("btnLoadModels", async () => {
     try {
       await loadModels();
       if (!appState.dataSplit) {
@@ -901,7 +908,7 @@ function wireUI() {
     }
   });
 
-  document.getElementById("btnTestModels").addEventListener("click", async () => {
+  bindClick("btnTestModels", async () => {
     try {
       await testModelsOnly();
       setStatus("Modelle erfolgreich auf aktuellem Datensatz getestet.");
