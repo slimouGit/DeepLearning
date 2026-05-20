@@ -795,11 +795,15 @@ function readParamsFromUI() {
   const n = parseInt(document.getElementById("paramN")?.value, 10);
   const noise = parseFloat(document.getElementById("paramNoise")?.value);
   const split = parseFloat(document.getElementById("paramSplit")?.value);
+  const cleanEp = parseInt(document.getElementById("paramCleanEpochs")?.value, 10);
+  const bestEp = parseInt(document.getElementById("paramBestEpochs")?.value, 10);
   const overfitEp = parseInt(document.getElementById("paramOverfitEpochs")?.value, 10);
 
   if (!Number.isNaN(n)) CONFIG.N = n;
   if (!Number.isNaN(noise)) CONFIG.noiseVar = noise;
   if (!Number.isNaN(split)) CONFIG.trainFraction = split;
+  if (!Number.isNaN(cleanEp)) CONFIG.cleanEpochs = cleanEp;
+  if (!Number.isNaN(bestEp)) CONFIG.bestEpochs = bestEp;
   if (!Number.isNaN(overfitEp)) CONFIG.overfitEpochs = overfitEp;
 }
 
