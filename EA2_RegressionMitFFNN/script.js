@@ -129,7 +129,7 @@ function setPipelineProgress(value, label) {
 }
 
 function setControlsDisabled(disabled) {
-  const controlIds = ["btnRun", "btnSaveData", "btnLoadData", "btnSaveModels", "btnLoadModels", "btnTestModels"];
+  const controlIds = ["btnRun2", "btnSaveData", "btnLoadData", "btnSaveModels", "btnLoadModels", "btnTestModels"];
   controlIds.forEach((id) => {
     const element = document.getElementById(id);
     if (element) element.disabled = Boolean(disabled);
