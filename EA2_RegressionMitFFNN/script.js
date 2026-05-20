@@ -791,7 +791,20 @@ async function testModelsOnly() {
   renderMseLines();
 }
 
+function readParamsFromUI() {
+  const n = parseInt(document.getElementById("paramN")?.value, 10);
+  const noise = parseFloat(document.getElementById("paramNoise")?.value);
+  const split = parseFloat(document.getElementById("paramSplit")?.value);
+  const overfitEp = parseInt(document.getElementById("paramOverfitEpochs")?.value, 10);
+
+  if (!Number.isNaN(n)) CONFIG.N = n;
+  if (!Number.isNaN(noise)) CONFIG.noiseVar = noise;
+  if (!Number.isNaN(split)) CONFIG.trainFraction = split;
+  if (!Number.isNaN(overfitEp)) CONFIG.overfitEpochs = overfitEp;
+}
+
 async function runFullPipeline() {
+  readParamsFromUI();
   const startMs = performance.now();
   const updateProgress = (value, label) => {
     let displayLabel = label;
@@ -845,12 +858,30 @@ function wireUI() {
     }
   };
 
-  bindClick("btnRun", async () => {
+  const runHandler = async () => {
     try {
       await runFullPipeline();
     } catch (err) {
       setStatus("Fehler: " + err.message);
       console.error(err);
+    }
+  };
+
+  bindClick("btnRun", runHandler);
+  bindClick("btnRun2", runHandler);
+
+  const sliderDefs = [
+    { id: "paramN",            valId: "paramNVal",            fmt: (v) => String(Math.round(Number(v))) },
+    { id: "paramNoise",        valId: "paramNoiseVal",        fmt: (v) => Number(v).toFixed(2) },
+    { id: "paramSplit",        valId: "paramSplitVal",        fmt: (v) => Math.round(Number(v) * 100) + "%" },
+    { id: "paramOverfitEpochs",valId: "paramOverfitEpochsVal",fmt: (v) => String(Math.round(Number(v))) }
+  ];
+
+  sliderDefs.forEach(({ id, valId, fmt }) => {
+    const slider = document.getElementById(id);
+    const label  = document.getElementById(valId);
+    if (slider && label) {
+      slider.addEventListener("input", () => { label.textContent = fmt(slider.value); });
     }
   });
 

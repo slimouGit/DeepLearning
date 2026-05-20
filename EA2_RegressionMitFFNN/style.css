@@ -468,6 +468,54 @@ button:disabled {
   }
 }
 
+/* ── Parameter Controls ── */
+
+.param-controls {
+  margin-bottom: 14px;
+}
+
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 24px;
+}
+
+.param-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.param-row label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+}
+
+.param-value {
+  font-weight: 700;
+  color: var(--md-sys-color-primary);
+  min-width: 40px;
+  text-align: right;
+}
+
+.param-row input[type="range"] {
+  width: 100%;
+  accent-color: var(--md-sys-color-primary);
+  cursor: pointer;
+  height: 4px;
+  margin: 2px 0 0;
+}
+
+@media (max-width: 600px) {
+  .param-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ── EA2 Spezifische Styles ── */
 
 .hero {
