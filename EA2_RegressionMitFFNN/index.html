@@ -78,39 +78,47 @@
       <article class="plot-card">
         <h3>R1 links: Datensatz ohne Rauschen (Train + Test)</h3>
         <div id="r1_clean" class="plot"></div>
+        <p class="plot-caption">Dieses Diagramm zeigt den idealen Datensatz ohne Messrauschen. Die Train- und Testpunkte folgen derselben glatten Struktur und dienen als Referenz fuer das Modellverhalten.</p>
       </article>
       <article class="plot-card">
         <h3>R1 rechts: Datensatz mit Rauschen (Train + Test)</h3>
         <div id="r1_noisy" class="plot"></div>
+        <p class="plot-caption">Hier sind die gleichen Grunddaten mit zusaetzlichem Zufallsrauschen dargestellt. Die Streuung macht sichtbar, warum Regression auf realen Daten schwieriger ist.</p>
       </article>
 
       <article class="plot-card">
         <h3>R2 links: y_unverrauscht(x) auf Trainingsdaten</h3>
         <div id="r2_train" class="plot"></div>
+        <p class="plot-caption">Das Clean-Modell wird auf den unverrauschten Trainingsdaten gezeigt. Man erkennt, wie gut das Netz die zugrunde liegende Funktion aus den Trainingspunkten lernt.</p>
       </article>
       <article class="plot-card">
         <h3>R2 rechts: y_unverrauscht(x) auf Testdaten</h3>
         <div id="r2_test" class="plot"></div>
+        <p class="plot-caption">Dieses Diagramm zeigt die Vorhersage des Clean-Modells auf unbekannten Testdaten. Ein aehnliches Bild wie im Training deutet auf gute Generalisierung hin.</p>
       </article>
       <div id="mse_r2" class="mse-line"></div>
 
       <article class="plot-card">
         <h3>R3 links: y_best(x) auf Trainingsdaten (verrauscht)</h3>
         <div id="r3_train" class="plot"></div>
+        <p class="plot-caption">Hier sieht man das Best-Fit-Modell auf verrauschten Trainingsdaten. Die Kurve passt die Daten gut an, ohne jede kleine Schwankung zu erzwingen.</p>
       </article>
       <article class="plot-card">
         <h3>R3 rechts: y_best(x) auf Testdaten (verrauscht)</h3>
         <div id="r3_test" class="plot"></div>
+        <p class="plot-caption">Das Best-Fit-Modell wird auf verrauschten Testdaten bewertet. Eine weiterhin stabile Kurvenform spricht fuer robuste Generalisierung trotz Rauschen.</p>
       </article>
       <div id="mse_r3" class="mse-line"></div>
 
       <article class="plot-card">
         <h3>R4 links: y_overfit(x) auf Trainingsdaten (verrauscht)</h3>
         <div id="r4_train" class="plot"></div>
+        <p class="plot-caption">Das Overfit-Modell zeigt auf den Trainingsdaten meist eine sehr genaue Anpassung. Die Kurve folgt dabei auch zufaelligen Stoerungen der Trainingspunkte.</p>
       </article>
       <article class="plot-card">
         <h3>R4 rechts: y_overfit(x) auf Testdaten (verrauscht)</h3>
         <div id="r4_test" class="plot"></div>
+        <p class="plot-caption">Auf den Testdaten wird sichtbar, dass das Overfit-Modell schlechter uebertraegt. Die Diskrepanz zwischen Train- und Testleistung macht Overfitting anschaulich.</p>
       </article>
       <div id="mse_r4" class="mse-line"></div>
     </div>
@@ -122,10 +130,12 @@
       <article class="plot-card">
         <h3>Clean Modell</h3>
         <div id="loss_clean" class="plot"></div>
+        <p class="plot-caption">Der Loss-Verlauf zeigt, wie der Fehler des Clean-Modells ueber die Epochen sinkt. Ein fruehes Abflachen weist darauf hin, dass das Modell konvergiert.</p>
       </article>
       <article class="plot-card">
         <h3>Best-Fit Modell</h3>
         <div id="loss_best" class="plot"></div>
+        <p class="plot-caption">Hier ist der Trainingsverlauf des Best-Fit-Modells auf verrauschten Daten zu sehen. Der Kurvenverlauf hilft einzuschaetzen, ob die gewaehlte Epochenzahl sinnvoll ist.</p>
       </article>
     </div>
   </section>
