@@ -49,7 +49,7 @@
     <h2 class="section-heading">Steuerung</h2>
 
     <details class="dev-controls">
-      <summary>Entwickler-Steuerung / Parameter ein-/ausklappen</summary>
+      <summary>Entwickler-Spielerei</summary>
       <p class="hint">Passe alle Parameter an und speichere oder lade Datensätze und Modelle.</p>
       <div class="param-grid" style="margin-bottom: 14px;">
         <div class="param-row">
@@ -193,19 +193,24 @@
       <li><strong>IndexedDB via tfjs-IO:</strong> Persistenz der trainierten Modelle direkt im Browser.</li>
     </ul>
     <p>
-      Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf,
-      bleibt aber dynamisch und erlaubt fuer den Entwicklungszyklus ueber das Steuerungspanel
-      das gezielte Ausloesen einzelner Schritte per Button (Retraining, Laden/Speichern, MSE-Test ohne Retraining).
+      Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf.
+      Alle 6 Parameter (Datenpunkte, Rauschvarianz, Trainingsanteil, Clean-Epochen, Best-Fit-Epochen, Overfit-Epochen) sind
+      im ausklappbaren "Entwickler-Steuerung / Parameter" Panel konfigurierbar.
+      Nach der Einstellung wird "Alles neu berechnen" gedrückt, um sofort alle Plots zu aktualisieren.
+      Das Panel erlaubt auch das gezielt Speichern, Laden und Testen von Datensaetzen und Modellen.
    </p>
 
     <h3>2) <strong>Fachlich</strong></h3>
     <p>
-      Zuerst werden 100 gleichverteilte x-Werte in [-2, 2] erzeugt und daraus y-Werte ueber die Ground-Truth berechnet.
-      Danach erfolgt eine zufaellige 50/50 Aufteilung in Train/Test, bevor Gaussian Label-Rauschen mit Varianz 0.05 addiert wird.
+      Zuerst werden N gleichverteilte x-Werte in [-2, 2] erzeugt und daraus y-Werte ueber die Ground-Truth berechnet.
+      Danach erfolgt eine zufaellige Aufteilung (konfigurierbarer Trainingsanteil) in Train/Test, bevor Gaussian Label-Rauschen addiert wird.
     </p>
     <p>
       Drei Modelle mit identischer Architektur (2 Hidden Layer mit je 100 ReLU-Neuronen, linearer Output) werden trainiert:
-      clean (ohne Rauschen), best-fit (verrauschte Daten, moderate Epochenzahl) und overfit (verrauschte Daten, sehr viele Epochen).
+      <strong>clean</strong> (ohne Rauschen, konfigurierbare Epochen),
+      <strong>best-fit</strong> (verrauschte Daten, konfigurierbare Epochen) und
+      <strong>overfit</strong> (verrauschte Daten, viele konfigurierbare Epochen).
+      Durch Variation der Epochenzahlen kann unmittelbar sichtbar gemacht werden, wie Overfitting entsteht und wie sich die Loss-Kurven unterscheiden.
     </p>
     <p>
       Zur Bewertung wird Mean Squared Error getrennt fuer Training und Test berechnet; die Testdaten werden nicht zum Training
