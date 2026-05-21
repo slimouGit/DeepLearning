@@ -1,4 +1,4 @@
-const DEFAULT_TEXT = `deep learning ist ein teilgebiet der kuenstlichen intelligenz . neuronale netze lernen aus daten .
+const DEFAULT_TEXT_FALLBACK = `deep learning ist ein teilgebiet der kuenstlichen intelligenz . neuronale netze lernen aus daten .
 deep learning ist ein teilgebiet der kuenstlichen intelligenz . daten sind fuer das training entscheidend .
 deep learning ist ein teilgebiet der kuenstlichen intelligenz . modelle lernen aus vielen beispielen .
 ein language model lernt wahrscheinliche wortfolgen aus einem text .
@@ -10,6 +10,7 @@ der softmax output liefert eine wahrscheinlichkeitsverteilung ueber das dictiona
 die cross entropy misst den fehler zwischen zielwort und vorhergesagter verteilung .
 mit mehr daten kann ein neuronales netz bessere muster lernen .
 bei sehr wenigen daten kann ein modell den trainings text auswendig lernen .`;
+const DEFAULT_TEXT_URL = 'default_text.txt';
 
 const state = {
   tokens: [], vocab: [], tokenToId: new Map(), idToToken: [], sequences: [], labels: [],
@@ -29,7 +30,7 @@ const dsgvoCloseBtn = document.getElementById('dsgvoCloseBtn');
 const dsgvoCloseBtn2 = document.getElementById('dsgvoCloseBtn2');
 
 window.addEventListener('DOMContentLoaded', async () => {
-  $('trainingText').value = DEFAULT_TEXT;
+  $('trainingText').value = await loadDefaultText();
   $('backend').textContent = `Backend: ${tf.getBackend()}`;
   setPrepProgress(0, 'Datenvorbereitung');
   setTrainProgress(0, 'Training');
@@ -37,6 +38,20 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupDsgvoModal();
   bindEvents();
 });
+
+async function loadDefaultText() {
+  try {
+    const response = await fetch(DEFAULT_TEXT_URL, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const text = (await response.text()).trim();
+    return text || DEFAULT_TEXT_FALLBACK;
+  } catch {
+    return DEFAULT_TEXT_FALLBACK;
+  }
+}
 
 function setPrepProgress(value, label) {
   const pct = Math.max(0, Math.min(100, Math.round(value)));
