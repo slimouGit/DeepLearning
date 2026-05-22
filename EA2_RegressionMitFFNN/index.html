@@ -76,6 +76,10 @@
           <label for="paramOverfitEpochs">Overfit-Epochen <span class="param-value" id="paramOverfitEpochsVal">2200</span></label>
           <input type="range" id="paramOverfitEpochs" min="500" max="5000" step="100" value="2200" oninput="document.getElementById('paramOverfitEpochsVal').textContent=Math.round(this.value)">
         </div>
+        <div class="param-row">
+          <label for="paramQaRuns">QA-Laeufe <span class="param-value" id="paramQaRunsVal">5</span></label>
+          <input type="range" id="paramQaRuns" min="3" max="20" step="1" value="5" oninput="document.getElementById('paramQaRunsVal').textContent=Math.round(this.value)">
+        </div>
       </div>
       <div class="buttons">
         <button id="btnRun2" type="button">Alles neu berechnen</button>
@@ -84,6 +88,7 @@
         <button id="btnSaveModels" type="button">Modelle speichern</button>
         <button id="btnLoadModels" type="button">Modelle laden</button>
         <button id="btnTestModels" type="button">Modelle testen (MSE)</button>
+        <button id="btnQaRandom" type="button">QA: zufaellige Testlaeufe</button>
       </div>
     </details>
 
@@ -97,6 +102,7 @@
       </div>
     </div>
     <p id="status" class="status">Initialisierung...</p>
+    <p id="qaSummary" class="status">QA: noch nicht ausgefuehrt.</p>
   </section>
 
   <section id="resultats">
@@ -164,22 +170,27 @@
         <div id="loss_best" class="plot"></div>
         <p class="plot-caption">Hier ist der Trainingsverlauf des Best-Fit-Modells auf verrauschten Daten zu sehen. Der Kurvenverlauf hilft einzuschaetzen, ob die gewaehlte Epochenzahl sinnvoll ist.</p>
       </article>
+      <article class="plot-card">
+        <h3>Overfit Modell</h3>
+        <div id="loss_overfit" class="plot"></div>
+        <p class="plot-caption">Der Overfit-Loss zeigt den lang laufenden Trainingsprozess. In Kombination mit Train/Test-MSE wird sichtbar, wann bessere Trainingswerte nicht mehr zu besserer Generalisierung fuehren.</p>
+      </article>
     </div>
   </section>
 
   <h2 id="diskussionHeading" class="section-heading">Diskussion</h2>
   <section class="card content-card" id="diskussion">
     <ol class="compact-list">
-      <li>Ohne Rauschen approximiert das Netz die Funktion stabil, daher liegen Trainings- und Test-MSE meist eng beieinander.</li>
-      <li>Mit Label-Rauschen entsteht ein unvermeidbarer Fehleranteil, den das Modell nicht perfekt generalisieren kann.</li>
-      <li>Das Best-Fit-Modell nutzt eine mittlere Epochenzahl und liefert im Test typischerweise den kleinsten MSE auf den verrauschten Daten.</li>
-      <li>Das Overfit-Modell minimiert den Trainingsfehler weiter, verschlechtert aber den Testfehler sichtbar.</li>
-      <li>Der Gap zwischen Train- und Test-MSE ist ein direktes Signal fuer Overfitting.</li>
-      <li>Mehr Epochen helfen nur bis zu einem Punkt; danach wird vor allem Rauschen mitgelernt.</li>
-      <li>Die zufaellige Datengenerierung fuehrt zu leicht unterschiedlichen Ergebnissen pro Lauf.</li>
-      <li>Mit nur 50 Trainingspunkten ist die Datenbasis klein, wodurch Overfitting leichter auftritt.</li>
-      <li>Die Architektur mit 2x100 ReLU ist leistungsfaehig genug, um sowohl gute Approximation als auch Overfit zu zeigen.</li>
-      <li>Gelernt wurde vor allem der Unterschied zwischen Datenanpassung und Generalisierung.</li>
+      <li>Ohne Rauschen approximiert das Netz die Funktion stabil, daher liegen Trainings- und Test-MSE eng beieinander.</li>
+      <li>Mit Label-Rauschen steigt der unvermeidbare Fehleranteil, was sich direkt in hoeheren MSE-Werten zeigt.</li>
+      <li>Das Best-Fit-Modell mit moderater Epochenzahl liefert typischerweise den kleinsten Test-MSE auf verrauschten Daten.</li>
+      <li>Das Overfit-Modell verbessert den Trainings-MSE weiter, verschlechtert aber den Test-MSE sichtbar.</li>
+      <li>Der Abstand zwischen Train- und Test-MSE ist ein klares Overfitting-Signal.</li>
+      <li>Die drei Loss-Plots (clean, best, overfit) zeigen anschaulich, wie unterschiedliche Epochenzahlen das Lernverhalten veraendern.</li>
+      <li>Mehr Epochen helfen nur bis zu einem Punkt; danach werden zufaellige Stoerungen aus dem Training mitgelernt.</li>
+      <li>Mehrere zufaellige QA-Testlaeufe bestaetigen, dass die Tendenzen stabil sind, auch wenn Einzelwerte schwanken.</li>
+      <li>Die 2x100-ReLU-Architektur ist stark genug, um sowohl gute Approximation als auch bewusstes Overfitting zu demonstrieren.</li>
+      <li>Gelernt wurde der zentrale Unterschied zwischen reiner Datenanpassung und echter Generalisierung auf unbekannte Daten.</li>
     </ol>
   </section>
 
@@ -193,11 +204,12 @@
       <li><strong>IndexedDB via tfjs-IO:</strong> Persistenz der trainierten Modelle direkt im Browser.</li>
     </ul>
     <p>
-      Technische Besonderheit: Die Seite berechnet beim Start automatisch einen kompletten Durchlauf.
-      Alle 6 Parameter (Datenpunkte, Rauschvarianz, Trainingsanteil, Clean-Epochen, Best-Fit-Epochen, Overfit-Epochen) sind
-      im ausklappbaren "Entwickler-Steuerung / Parameter" Panel konfigurierbar.
+      Technische Besonderheit: Die Seite versucht beim Start zuerst, Datensatz und vortrainierte Modelle zu laden (URL/IndexedDB).
+      Falls nichts vorhanden ist, wird automatisch ein kompletter Trainingsdurchlauf gestartet und anschließend gespeichert.
+      Alle 7 Parameter (Datenpunkte, Rauschvarianz, Trainingsanteil, Clean-Epochen, Best-Fit-Epochen, Overfit-Epochen, QA-Laeufe)
+      sind im ausklappbaren "Entwickler-Steuerung / Parameter" Panel konfigurierbar.
       Nach der Einstellung wird "Alles neu berechnen" gedrückt, um sofort alle Plots zu aktualisieren.
-      Das Panel erlaubt auch das gezielt Speichern, Laden und Testen von Datensaetzen und Modellen.
+      Das Panel erlaubt auch das gezielte Speichern, Laden und Testen von Datensaetzen und Modellen inklusive mehrerer zufaelliger QA-Testlaeufe.
    </p>
 
     <h3>2) <strong>Fachlich</strong></h3>
@@ -210,7 +222,7 @@
       <strong>clean</strong> (ohne Rauschen, konfigurierbare Epochen),
       <strong>best-fit</strong> (verrauschte Daten, konfigurierbare Epochen) und
       <strong>overfit</strong> (verrauschte Daten, viele konfigurierbare Epochen).
-      Durch Variation der Epochenzahlen kann unmittelbar sichtbar gemacht werden, wie Overfitting entsteht und wie sich die Loss-Kurven unterscheiden.
+      Durch Variation der Epochenzahlen kann unmittelbar sichtbar gemacht werden, wie Overfitting entsteht und wie sich alle drei Loss-Kurven unterscheiden.
     </p>
     <p>
       Zur Bewertung wird Mean Squared Error getrennt fuer Training und Test berechnet; die Testdaten werden nicht zum Training

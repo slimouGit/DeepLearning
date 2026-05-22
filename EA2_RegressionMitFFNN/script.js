@@ -13,7 +13,13 @@ const CONFIG = {
   cleanEpochs: 500,          // Epochen für saubere Daten (R2)
   bestEpochs: 180,           // Epochen für Best-Fit Modell (R3)
   overfitEpochs: 2200,       // Epochen für Overfitting Modell (R4)
-  curvePoints: 250           // Punkte für Modellkurven-Visualisierung
+  curvePoints: 250,          // Punkte für Modellkurven-Visualisierung
+  qaRuns: 5,                 // Anzahl zufaelliger QA-Tests
+  pretrainedModelUrls: {
+    clean: "models/clean/model.json",
+    best: "models/best/model.json",
+    overfit: "models/overfit/model.json"
+  }
 };
 
 /**
@@ -22,6 +28,7 @@ const CONFIG = {
  */
 const STORAGE_KEYS = {
   dataset: "ea2_dataset_v1",
+  losses: "ea2_losses_v1",
   modelClean: "indexeddb://ea2_ffnn_clean",
   modelBest: "indexeddb://ea2_ffnn_best",
   modelOverfit: "indexeddb://ea2_ffnn_overfit"
@@ -129,11 +136,18 @@ function setPipelineProgress(value, label) {
 }
 
 function setControlsDisabled(disabled) {
-  const controlIds = ["btnRun2", "btnSaveData", "btnLoadData", "btnSaveModels", "btnLoadModels", "btnTestModels"];
+  const controlIds = ["btnRun2", "btnSaveData", "btnLoadData", "btnSaveModels", "btnLoadModels", "btnTestModels", "btnQaRandom"];
   controlIds.forEach((id) => {
     const element = document.getElementById(id);
     if (element) element.disabled = Boolean(disabled);
   });
+}
+
+function setQaSummary(message) {
+  const qaEl = document.getElementById("qaSummary");
+  if (qaEl) {
+    qaEl.textContent = message;
+  }
 }
 
 /**
@@ -617,11 +631,14 @@ function plotPrediction(divId, x, y, curve, label) {
 }
 
 function plotLoss(divId, lossHistory) {
-  const epochs = lossHistory.map((_, i) => i + 1);
+  const values = Array.isArray(lossHistory) ? lossHistory : [];
+  const epochs = values.map((_, i) => i + 1);
+  const hasData = values.length > 0;
+
   Plotly.newPlot(divId, [
     {
       x: epochs,
-      y: lossHistory,
+      y: values,
       mode: "lines",
       type: "scatter",
       name: "Train Loss",
@@ -635,8 +652,19 @@ function plotLoss(divId, lossHistory) {
     margin: { t: 10, r: 10, b: 45, l: 55 },
     paper_bgcolor: "#ffffff",
     plot_bgcolor: "#ffffff",
-    xaxis: { title: "Epoche" },
-    yaxis: { title: "MSE" }
+    xaxis: { title: "Epoche", range: hasData ? undefined : [0, 1] },
+    yaxis: { title: "MSE", range: hasData ? undefined : [0, 1] },
+    annotations: hasData
+      ? []
+      : [{
+        text: "Keine Loss-Historie vorhanden. Bitte 'Alles neu berechnen' ausfuehren.",
+        x: 0.5,
+        y: 0.5,
+        xref: "paper",
+        yref: "paper",
+        showarrow: false,
+        font: { size: 12, color: "#555555" }
+      }]
   }, { responsive: true });
 }
 
@@ -731,12 +759,38 @@ async function trainAllModels(split, onProgress) {
 
 /**
  * RENDERE LOSS-KURVEN
- * Plottet Loss-Verlauf für Clean und Best Modelle
- * (Overfit nicht geplottet wegen unterschiedlicher Y-Skala)
+ * Plottet Loss-Verlauf fuer Clean, Best-Fit und Overfit
  */
 function renderLossPlots() {
   plotLoss("loss_clean", appState.losses.clean);
   plotLoss("loss_best", appState.losses.best);
+  plotLoss("loss_overfit", appState.losses.overfit);
+}
+
+function saveLossHistories() {
+  localStorage.setItem(STORAGE_KEYS.losses, JSON.stringify(appState.losses));
+}
+
+function loadLossHistories() {
+  const raw = localStorage.getItem(STORAGE_KEYS.losses);
+  if (!raw) {
+    return false;
+  }
+
+  const parsed = JSON.parse(raw);
+  const hasValid = parsed
+    && Array.isArray(parsed.clean)
+    && Array.isArray(parsed.best)
+    && Array.isArray(parsed.overfit);
+
+  if (!hasValid) {
+    throw new Error("Gespeicherte Loss-Historie hat ein ungueltiges Format.");
+  }
+
+  appState.losses.clean = parsed.clean;
+  appState.losses.best = parsed.best;
+  appState.losses.overfit = parsed.overfit;
+  return true;
 }
 
 function saveDataSet() {
@@ -772,12 +826,100 @@ async function saveModels() {
   await appState.models.clean.save(STORAGE_KEYS.modelClean);
   await appState.models.best.save(STORAGE_KEYS.modelBest);
   await appState.models.overfit.save(STORAGE_KEYS.modelOverfit);
+  saveLossHistories();
 }
 
 async function loadModels() {
   appState.models.clean = await tf.loadLayersModel(STORAGE_KEYS.modelClean);
   appState.models.best = await tf.loadLayersModel(STORAGE_KEYS.modelBest);
   appState.models.overfit = await tf.loadLayersModel(STORAGE_KEYS.modelOverfit);
+  try {
+    loadLossHistories();
+  } catch (err) {
+    console.warn("Loss-Historie konnte nicht geladen werden:", err.message);
+  }
+}
+
+async function tryLoadPretrainedModelsFromUrls() {
+  const urls = CONFIG.pretrainedModelUrls;
+  if (!urls || !urls.clean || !urls.best || !urls.overfit) {
+    return false;
+  }
+
+  try {
+    appState.models.clean = await tf.loadLayersModel(urls.clean);
+    appState.models.best = await tf.loadLayersModel(urls.best);
+    appState.models.overfit = await tf.loadLayersModel(urls.overfit);
+    return true;
+  } catch {
+    appState.models.clean = null;
+    appState.models.best = null;
+    appState.models.overfit = null;
+    return false;
+  }
+}
+
+function hasAllModels() {
+  return Boolean(appState.models.clean && appState.models.best && appState.models.overfit);
+}
+
+async function renderEverythingFromCurrentState() {
+  if (!appState.dataSplit || !hasAllModels()) {
+    throw new Error("Datensatz oder Modelle fehlen.");
+  }
+
+  plotDataSets(appState.dataSplit);
+  renderLossPlots();
+  await evaluateAllMse(appState.dataSplit);
+  await renderPredictions(appState.dataSplit);
+  renderMseLines();
+}
+
+async function runQaRandomizedTests(runs = CONFIG.qaRuns) {
+  if (!hasAllModels()) {
+    throw new Error("Modelle fehlen. Bitte trainieren oder laden.");
+  }
+
+  const count = Math.max(1, Math.floor(runs));
+  const sum = {
+    cleanTrain: 0,
+    cleanTest: 0,
+    bestTrain: 0,
+    bestTest: 0,
+    overfitTrain: 0,
+    overfitTest: 0
+  };
+
+  for (let i = 0; i < count; i += 1) {
+    const data = createDataSet(CONFIG.N, CONFIG.noiseVar);
+    const split = splitDataRandom(data, CONFIG.trainFraction);
+
+    sum.cleanTrain += await mseOnData(appState.models.clean, split.train.x, split.train.y);
+    sum.cleanTest += await mseOnData(appState.models.clean, split.test.x, split.test.y);
+
+    sum.bestTrain += await mseOnData(appState.models.best, split.train.x, split.train.yN);
+    sum.bestTest += await mseOnData(appState.models.best, split.test.x, split.test.yN);
+
+    sum.overfitTrain += await mseOnData(appState.models.overfit, split.train.x, split.train.yN);
+    sum.overfitTest += await mseOnData(appState.models.overfit, split.test.x, split.test.yN);
+
+    await tf.nextFrame();
+  }
+
+  const avg = {
+    cleanTrain: sum.cleanTrain / count,
+    cleanTest: sum.cleanTest / count,
+    bestTrain: sum.bestTrain / count,
+    bestTest: sum.bestTest / count,
+    overfitTrain: sum.overfitTrain / count,
+    overfitTest: sum.overfitTest / count
+  };
+
+  setQaSummary(
+    `QA (${count} Laeufe): clean train/test ${avg.cleanTrain.toFixed(5)} / ${avg.cleanTest.toFixed(5)} | `
+    + `best train/test ${avg.bestTrain.toFixed(5)} / ${avg.bestTest.toFixed(5)} | `
+    + `overfit train/test ${avg.overfitTrain.toFixed(5)} / ${avg.overfitTest.toFixed(5)}`
+  );
 }
 
 async function testModelsOnly() {
@@ -798,6 +940,7 @@ function readParamsFromUI() {
   const cleanEp = parseInt(document.getElementById("paramCleanEpochs")?.value, 10);
   const bestEp = parseInt(document.getElementById("paramBestEpochs")?.value, 10);
   const overfitEp = parseInt(document.getElementById("paramOverfitEpochs")?.value, 10);
+  const qaRuns = parseInt(document.getElementById("paramQaRuns")?.value, 10);
 
   if (!Number.isNaN(n)) CONFIG.N = n;
   if (!Number.isNaN(noise)) CONFIG.noiseVar = noise;
@@ -805,6 +948,7 @@ function readParamsFromUI() {
   if (!Number.isNaN(cleanEp)) CONFIG.cleanEpochs = cleanEp;
   if (!Number.isNaN(bestEp)) CONFIG.bestEpochs = bestEp;
   if (!Number.isNaN(overfitEp)) CONFIG.overfitEpochs = overfitEp;
+  if (!Number.isNaN(qaRuns)) CONFIG.qaRuns = qaRuns;
 }
 
 async function runFullPipeline() {
@@ -846,8 +990,10 @@ async function runFullPipeline() {
     updateProgress(97, "Erzeuge Vorhersage-Plots");
     await renderPredictions(appState.dataSplit);
     renderMseLines();
+    saveLossHistories();
 
     updateProgress(100, "Pipeline abgeschlossen");
+    setQaSummary("QA: noch nicht ausgefuehrt.");
     setStatus("Fertig: R1-R4, Loss-Plots und MSE sind aktualisiert.");
   } finally {
     setControlsDisabled(false);
@@ -878,7 +1024,8 @@ function wireUI() {
     { id: "paramN",            valId: "paramNVal",            fmt: (v) => String(Math.round(Number(v))) },
     { id: "paramNoise",        valId: "paramNoiseVal",        fmt: (v) => Number(v).toFixed(2) },
     { id: "paramSplit",        valId: "paramSplitVal",        fmt: (v) => Math.round(Number(v) * 100) + "%" },
-    { id: "paramOverfitEpochs",valId: "paramOverfitEpochsVal",fmt: (v) => String(Math.round(Number(v))) }
+    { id: "paramOverfitEpochs",valId: "paramOverfitEpochsVal",fmt: (v) => String(Math.round(Number(v))) },
+    { id: "paramQaRuns",       valId: "paramQaRunsVal",       fmt: (v) => String(Math.round(Number(v))) }
   ];
 
   sliderDefs.forEach(({ id, valId, fmt }) => {
@@ -908,6 +1055,7 @@ function wireUI() {
         await renderPredictions(appState.dataSplit);
         renderMseLines();
       }
+      setQaSummary("QA: noch nicht ausgefuehrt.");
       setStatus("Datensatz aus localStorage geladen.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
@@ -932,10 +1080,8 @@ function wireUI() {
         const baseData = createDataSet(CONFIG.N, CONFIG.noiseVar);
         appState.dataSplit = splitDataRandom(baseData, CONFIG.trainFraction);
       }
-      plotDataSets(appState.dataSplit);
-      await evaluateAllMse(appState.dataSplit);
-      await renderPredictions(appState.dataSplit);
-      renderMseLines();
+      await renderEverythingFromCurrentState();
+      setQaSummary("QA: noch nicht ausgefuehrt.");
       setStatus("Modelle aus IndexedDB geladen und ausgewertet.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
@@ -952,14 +1098,57 @@ function wireUI() {
       console.error(err);
     }
   });
+
+  bindClick("btnQaRandom", async () => {
+    try {
+      readParamsFromUI();
+      setStatus(`Starte QA mit ${CONFIG.qaRuns} zufaelligen Testlaeufen...`);
+      await runQaRandomizedTests(CONFIG.qaRuns);
+      setStatus(`QA abgeschlossen (${CONFIG.qaRuns} zufaellige Testlaeufe).`);
+    } catch (err) {
+      setStatus("Fehler: " + err.message);
+      console.error(err);
+    }
+  });
 }
 
 async function bootstrap() {
   wireUI();
   setupNavigation();
   setupDsgvoModal();
+  setQaSummary("QA: noch nicht ausgefuehrt.");
   try {
+    let datasetLoaded = false;
+    try {
+      loadDataSet();
+      datasetLoaded = true;
+    } catch {
+      const baseData = createDataSet(CONFIG.N, CONFIG.noiseVar);
+      appState.dataSplit = splitDataRandom(baseData, CONFIG.trainFraction);
+      saveDataSet();
+    }
+
+    let modelsLoaded = await tryLoadPretrainedModelsFromUrls();
+    if (!modelsLoaded) {
+      try {
+        await loadModels();
+        modelsLoaded = true;
+      } catch {
+        modelsLoaded = false;
+      }
+    }
+
+    if (modelsLoaded && appState.dataSplit) {
+      await renderEverythingFromCurrentState();
+      setPipelineProgress(100, "Vortrainierte Modelle geladen");
+      setStatus(datasetLoaded
+        ? "Fertig: Datensatz und vortrainierte Modelle wurden geladen."
+        : "Fertig: Datensatz erzeugt, vortrainierte Modelle wurden geladen.");
+      return;
+    }
+
     await runFullPipeline();
+    await saveModels();
   } catch (err) {
     setStatus("Fehler bei Initialisierung: " + err.message);
     console.error(err);
