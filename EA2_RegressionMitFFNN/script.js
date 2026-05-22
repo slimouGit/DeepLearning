@@ -150,6 +150,37 @@ function setQaSummary(message) {
   }
 }
 
+function setActionFeedback(message, isError = false) {
+  const feedbackEl = document.getElementById("actionFeedback");
+  if (!feedbackEl) {
+    return;
+  }
+
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const ss = String(now.getSeconds()).padStart(2, "0");
+  const prefix = isError ? "Fehler" : "Erfolg";
+  feedbackEl.innerHTML = `<strong>Letzte Aktion (${hh}:${mm}:${ss}):</strong> ${prefix} - ${message}`;
+}
+
+function flashMseLines() {
+  ["mse_r2", "mse_r3", "mse_r4"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) {
+      return;
+    }
+
+    el.classList.remove("is-updated");
+    // restart transition reliably on repeated button clicks
+    void el.offsetWidth;
+    el.classList.add("is-updated");
+    setTimeout(() => {
+      el.classList.remove("is-updated");
+    }, 800);
+  });
+}
+
 /**
  * NAVIGATION FUNKTIONEN
  * Responsive Hamburger-Menü für mobile Geräte
@@ -689,6 +720,7 @@ function renderMseLines() {
   setMseLine("mse_r2", "R2 clean Modell", appState.mse.clean);
   setMseLine("mse_r3", "R3 best-fit Modell", appState.mse.best);
   setMseLine("mse_r4", "R4 overfit Modell", appState.mse.overfit);
+  flashMseLines();
 }
 
 async function renderPredictions(split) {
@@ -1040,8 +1072,10 @@ function wireUI() {
     try {
       saveDataSet();
       setStatus("Datensatz wurde in localStorage gespeichert.");
+      setActionFeedback("Datensatz gespeichert.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
+      setActionFeedback(err.message, true);
       console.error(err);
     }
   });
@@ -1057,8 +1091,10 @@ function wireUI() {
       }
       setQaSummary("QA: noch nicht ausgefuehrt.");
       setStatus("Datensatz aus localStorage geladen.");
+      setActionFeedback("Datensatz geladen.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
+      setActionFeedback(err.message, true);
       console.error(err);
     }
   });
@@ -1067,8 +1103,10 @@ function wireUI() {
     try {
       await saveModels();
       setStatus("Modelle in IndexedDB gespeichert.");
+      setActionFeedback("Modelle gespeichert.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
+      setActionFeedback(err.message, true);
       console.error(err);
     }
   });
@@ -1083,8 +1121,10 @@ function wireUI() {
       await renderEverythingFromCurrentState();
       setQaSummary("QA: noch nicht ausgefuehrt.");
       setStatus("Modelle aus IndexedDB geladen und ausgewertet.");
+      setActionFeedback("Modelle geladen und ausgewertet.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
+      setActionFeedback(err.message, true);
       console.error(err);
     }
   });
@@ -1093,8 +1133,10 @@ function wireUI() {
     try {
       await testModelsOnly();
       setStatus("Modelle erfolgreich auf aktuellem Datensatz getestet.");
+      setActionFeedback("Modelle getestet, MSE aktualisiert.");
     } catch (err) {
       setStatus("Fehler: " + err.message);
+      setActionFeedback(err.message, true);
       console.error(err);
     }
   });
@@ -1105,8 +1147,10 @@ function wireUI() {
       setStatus(`Starte QA mit ${CONFIG.qaRuns} zufaelligen Testlaeufen...`);
       await runQaRandomizedTests(CONFIG.qaRuns);
       setStatus(`QA abgeschlossen (${CONFIG.qaRuns} zufaellige Testlaeufe).`);
+      setActionFeedback(`QA abgeschlossen mit ${CONFIG.qaRuns} Testlaeufen.`);
     } catch (err) {
       setStatus("Fehler: " + err.message);
+      setActionFeedback(err.message, true);
       console.error(err);
     }
   });
@@ -1117,6 +1161,7 @@ async function bootstrap() {
   setupNavigation();
   setupDsgvoModal();
   setQaSummary("QA: noch nicht ausgefuehrt.");
+  setActionFeedback("Anwendung gestartet.");
   try {
     let datasetLoaded = false;
     try {
@@ -1144,13 +1189,16 @@ async function bootstrap() {
       setStatus(datasetLoaded
         ? "Fertig: Datensatz und vortrainierte Modelle wurden geladen."
         : "Fertig: Datensatz erzeugt, vortrainierte Modelle wurden geladen.");
+      setActionFeedback("Vortrainierte Modelle geladen.");
       return;
     }
 
     await runFullPipeline();
     await saveModels();
+    setActionFeedback("Neue Modelle trainiert und gespeichert.");
   } catch (err) {
     setStatus("Fehler bei Initialisierung: " + err.message);
+    setActionFeedback(err.message, true);
     console.error(err);
   }
 }
