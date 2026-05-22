@@ -11,8 +11,8 @@ const CONFIG = {
   learningRate: 0.01,        // Adam Optimizer Lernrate
   batchSize: 32,             // Größe der Mini-Batches beim Training
   cleanEpochs: 500,          // Epochen für saubere Daten (R2)
-  bestEpochs: 180,           // Epochen für Best-Fit Modell (R3)
-  overfitEpochs: 2200,       // Epochen für Overfitting Modell (R4)
+  bestEpochs: 80,            // Epochen für Best-Fit Modell (R3)
+  overfitEpochs: 2500,       // Epochen für Overfitting Modell (R4)
   curvePoints: 250,          // Punkte für Modellkurven-Visualisierung
   qaRuns: 5,                 // Anzahl zufaelliger QA-Tests
   pretrainedModelUrls: {
