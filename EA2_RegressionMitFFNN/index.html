@@ -114,47 +114,47 @@
       <article class="plot-card">
         <h3>R1 links: Datensatz ohne Rauschen (Train + Test)</h3>
         <div id="r1_clean" class="plot"></div>
-        <p class="plot-caption">Dieses Diagramm zeigt den idealen Datensatz ohne Messrauschen. Die Train- und Testpunkte folgen derselben glatten Struktur und dienen als Referenz fuer das Modellverhalten.</p>
+        <p class="plot-caption">Dieses Diagramm zeigt den aktuell verwendeten Datensatz ohne zusaetzliches Label-Rauschen. Sichtbar werden Verteilung, Train/Test-Aufteilung und die zugrunde liegende Funktionsstruktur.</p>
       </article>
       <article class="plot-card">
         <h3>R1 rechts: Datensatz mit Rauschen (Train + Test)</h3>
         <div id="r1_noisy" class="plot"></div>
-        <p class="plot-caption">Hier sind die gleichen Grunddaten mit zusaetzlichem Zufallsrauschen dargestellt. Die Streuung macht sichtbar, warum Regression auf realen Daten schwieriger ist.</p>
+        <p class="plot-caption">Hier ist derselbe Datensatz mit der aktuell eingestellten Rauschstaerke dargestellt. So laesst sich direkt erkennen, wie stark die Streuung das Regressionsproblem beeinflusst.</p>
       </article>
 
       <article class="plot-card">
         <h3>R2 links: y_unverrauscht(x) auf Trainingsdaten</h3>
         <div id="r2_train" class="plot"></div>
-        <p class="plot-caption">Das Clean-Modell wird auf den unverrauschten Trainingsdaten gezeigt. Man erkennt, wie gut das Netz die zugrunde liegende Funktion aus den Trainingspunkten lernt.</p>
+        <p class="plot-caption">Gezeigt wird die Modellvorhersage des Clean-Modells auf den aktuellen Trainingsdaten. Die Ueberlagerung mit den Punkten macht die Anpassung an die Zielstruktur sichtbar.</p>
       </article>
       <article class="plot-card">
         <h3>R2 rechts: y_unverrauscht(x) auf Testdaten</h3>
         <div id="r2_test" class="plot"></div>
-        <p class="plot-caption">Dieses Diagramm zeigt die Vorhersage des Clean-Modells auf unbekannten Testdaten. Ein aehnliches Bild wie im Training deutet auf gute Generalisierung hin.</p>
+        <p class="plot-caption">Dieses Diagramm zeigt die Vorhersage des Clean-Modells auf den aktuellen Testdaten. Der Vergleich mit dem Trainingsplot hilft bei der Einschaetzung der Generalisierung.</p>
       </article>
       <div id="mse_r2" class="mse-line"></div>
 
       <article class="plot-card">
         <h3>R3 links: y_best(x) auf Trainingsdaten (verrauscht)</h3>
         <div id="r3_train" class="plot"></div>
-        <p class="plot-caption">Hier sieht man das Best-Fit-Modell auf verrauschten Trainingsdaten. Die Kurve passt die Daten gut an, ohne jede kleine Schwankung zu erzwingen.</p>
+        <p class="plot-caption">Hier ist das Best-Fit-Modell auf verrauschten Trainingsdaten bei den gewaehlten Einstellungen dargestellt. Die Kurve zeigt, wie stark das Modell die beobachteten Muster aufnimmt.</p>
       </article>
       <article class="plot-card">
         <h3>R3 rechts: y_best(x) auf Testdaten (verrauscht)</h3>
         <div id="r3_test" class="plot"></div>
-        <p class="plot-caption">Das Best-Fit-Modell wird auf verrauschten Testdaten bewertet. Eine weiterhin stabile Kurvenform spricht fuer robuste Generalisierung trotz Rauschen.</p>
+        <p class="plot-caption">Das Best-Fit-Modell wird auf verrauschten Testdaten bewertet. Eine stabile Kurvenform im Vergleich zum Training spricht fuer belastbare Generalisierung.</p>
       </article>
       <div id="mse_r3" class="mse-line"></div>
 
       <article class="plot-card">
         <h3>R4 links: y_overfit(x) auf Trainingsdaten (verrauscht)</h3>
         <div id="r4_train" class="plot"></div>
-        <p class="plot-caption">Das Overfit-Modell zeigt auf den Trainingsdaten meist eine sehr genaue Anpassung. Die Kurve folgt dabei auch zufaelligen Stoerungen der Trainingspunkte.</p>
+        <p class="plot-caption">Das Overfit-Modell zeigt auf den verrauschten Trainingsdaten oft eine sehr enge Anpassung. Bei hoher Epochenzahl kann die Kurve auch datenbedingte Schwankungen mitlernen.</p>
       </article>
       <article class="plot-card">
         <h3>R4 rechts: y_overfit(x) auf Testdaten (verrauscht)</h3>
         <div id="r4_test" class="plot"></div>
-        <p class="plot-caption">Auf den Testdaten wird sichtbar, dass das Overfit-Modell schlechter uebertraegt. Die Diskrepanz zwischen Train- und Testleistung macht Overfitting anschaulich.</p>
+        <p class="plot-caption">Auf den Testdaten zeigt sich, wie gut die ueberangepasste Loesung noch uebertraegt. Eine groessere Differenz zu den Trainingswerten weist auf Overfitting hin.</p>
       </article>
       <div id="mse_r4" class="mse-line"></div>
     </div>
@@ -166,17 +166,17 @@
       <article class="plot-card">
         <h3>Clean Modell</h3>
         <div id="loss_clean" class="plot"></div>
-        <p class="plot-caption">Der Loss-Verlauf zeigt, wie der Fehler des Clean-Modells ueber die Epochen sinkt. Ein fruehes Abflachen weist darauf hin, dass das Modell konvergiert.</p>
+        <p class="plot-caption">Der Plot zeigt den aktuellen MSE-Verlauf des Clean-Modells ueber die Epochen. Form und Niveau haengen von Datensatz, Trainingsverlauf und Epochenzahl ab.</p>
       </article>
       <article class="plot-card">
         <h3>Best-Fit Modell</h3>
         <div id="loss_best" class="plot"></div>
-        <p class="plot-caption">Hier ist der Trainingsverlauf des Best-Fit-Modells auf verrauschten Daten zu sehen. Der Kurvenverlauf hilft einzuschaetzen, ob die gewaehlte Epochenzahl sinnvoll ist.</p>
+        <p class="plot-caption">Hier ist der MSE-Verlauf des Best-Fit-Modells auf verrauschten Daten dargestellt. Der Kurvenverlauf hilft, die Wirkung der aktuell gewaehlten Epochenzahl einzuordnen.</p>
       </article>
       <article class="plot-card">
         <h3>Overfit Modell</h3>
         <div id="loss_overfit" class="plot"></div>
-        <p class="plot-caption">Der Overfit-Loss zeigt den lang laufenden Trainingsprozess. In Kombination mit Train/Test-MSE wird sichtbar, wann bessere Trainingswerte nicht mehr zu besserer Generalisierung fuehren.</p>
+        <p class="plot-caption">Dieser Verlauf zeigt das lange Training des Overfit-Modells. Zusammen mit den Train/Test-MSE-Werten laesst sich beurteilen, ab wann weitere Epochen die Generalisierung nicht mehr verbessern.</p>
       </article>
     </div>
   </section>

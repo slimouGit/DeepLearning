@@ -647,6 +647,21 @@ button {
   margin: 12px 0 0;
   color: var(--md-sys-color-on-surface-variant);
   font-size: 0.9rem;
+  border-radius: 6px;
+  padding: 8px 10px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.status.is-success {
+  background: #eaf7ef;
+  border: 1px solid #8ec7a0;
+  color: #1f5d33;
+}
+
+.status.is-error {
+  background: #fdecec;
+  border: 1px solid #dc9f9f;
+  color: #812626;
 }
 
 .action-feedback {

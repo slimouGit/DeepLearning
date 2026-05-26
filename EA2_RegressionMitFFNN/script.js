@@ -103,10 +103,16 @@ function f(x) {
  * Aktualisiert das Statusfeld mit Nachricht
  * @param {string} message - Anzuzeigende Nachricht
  */
-function setStatus(message) {
+function setStatus(message, tone = "info") {
   const statusEl = document.getElementById("status");
   if (statusEl) {
     statusEl.textContent = message;
+    statusEl.classList.remove("is-success", "is-error");
+    if (tone === "success") {
+      statusEl.classList.add("is-success");
+    } else if (tone === "error") {
+      statusEl.classList.add("is-error");
+    }
   }
 }
 
@@ -1186,10 +1192,11 @@ async function bootstrap() {
     if (modelsLoaded && appState.dataSplit) {
       await renderEverythingFromCurrentState();
       setPipelineProgress(100, "Vortrainierte Modelle geladen");
-      setStatus(datasetLoaded
-        ? "Fertig: Datensatz und vortrainierte Modelle wurden geladen."
-        : "Fertig: Datensatz erzeugt, vortrainierte Modelle wurden geladen.");
-      setActionFeedback("Vortrainierte Modelle geladen.");
+      const statusMessage = datasetLoaded
+        ? "Bereit: Datensatz und 3 vortrainierte Modelle wurden geladen. Alle Diagramme sind sofort nutzbar."
+        : "Bereit: Neuer Datensatz wurde erzeugt und 3 vortrainierte Modelle wurden geladen. Alle Diagramme sind sofort nutzbar.";
+      setStatus(statusMessage, "success");
+      setActionFeedback("Datensatz + 3 Modelle geladen. Tipp: Mit 'Alles neu berechnen' startest du ein frisches Training mit den aktuellen Parametern.");
       return;
     }
 
@@ -1197,7 +1204,7 @@ async function bootstrap() {
     await saveModels();
     setActionFeedback("Neue Modelle trainiert und gespeichert.");
   } catch (err) {
-    setStatus("Fehler bei Initialisierung: " + err.message);
+    setStatus("Fehler bei Initialisierung: " + err.message, "error");
     setActionFeedback(err.message, true);
     console.error(err);
   }
