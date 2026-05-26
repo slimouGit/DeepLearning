@@ -45,6 +45,13 @@ Unter R2, R3 und R4 steht jeweils:
 
 So kannst du direkt vergleichen, ob ein Modell overfittet.
 
+## Was bedeutet MSE?
+MSE = Mean Squared Error (Mittlerer Quadratischer Fehler)
+- Es misst den durchschnittlichen Unterschied zwischen echten und vorhergesagten Werten.
+- Kleinere MSE-Werte sind besser.
+- **MSE_train**: Fehler auf den Trainingsdaten.
+- **MSE_test**: Fehler auf den unbekannten Testdaten.
+
 ## Was bedeutet Overfitting (ganz einfach)?
 Overfitting bedeutet:
 - Das Modell merkt sich Trainingsdaten zu stark.
@@ -54,15 +61,21 @@ Typisches Zeichen:
 - MSE_train deutlich kleiner als MSE_test.
 
 ## Buttons erklaert
-- Alles neu berechnen: Erzeugt neue Daten, trainiert alle Modelle neu, aktualisiert alle Plots.
-- Datensatz speichern: Speichert den aktuellen Datensatz im Browser (localStorage).
-- Datensatz laden: Laedt den gespeicherten Datensatz wieder.
-- Modelle speichern: Speichert die trainierten Modelle im Browser (IndexedDB).
-- Modelle laden: Laedt gespeicherte Modelle und bewertet sie auf dem aktuellen Datensatz.
-- Modelle testen (MSE): Berechnet nur die MSE-Werte (Train/Test) fuer vorhandene Modelle.
+- **Alles neu berechnen**: Erzeugt neue Daten, trainiert alle Modelle neu, aktualisiert alle Plots.
+- **Datensatz speichern**: Speichert den aktuellen Datensatz im Browser (localStorage).
+- **Datensatz laden**: Laedt den gespeicherten Datensatz wieder.
+- **Modelle speichern**: Speichert die trainierten Modelle im Browser (IndexedDB).
+- **Modelle laden**: Laedt gespeicherte Modelle und bewertet sie auf dem aktuellen Datensatz.
+- **Modelle testen (MSE)**: Berechnet nur die MSE-Werte (Train/Test) fuer vorhandene Modelle.
+- **Qualitaetssicherung**: Fuehrt mehrere zufaellige Testlaeufe durch und zeigt Durchschnittswerte fuer alle drei Modelle an. Verifies Stabilitaet der Ergebnisse.
 
 Hinweis zum Testen:
 Der Standardablauf startet beim Laden der Seite automatisch. Optional kannst du ueber das Steuerungspanel einzelne Pipeline-Schritte gezielt und wiederholbar ausloesen (z. B. neu trainieren, persistierte Daten/Modelle laden oder reine MSE-Tests ohne Retraining), indem du die entsprechenden Buttons verwendest.
+
+## Statusanzeige und Qualitaetssicherung
+Unter dem Fortschrittsbalken siehst du:
+- **Statuszeile**: Zeigt, was gerade passiert (z. B. "Bereit: Datensatz und 3 vortrainierte Modelle wurden geladen.").
+- **Qualitaetssicherungs-Status**: Zeigt, ob Testlaeufe durchgefuehrt wurden. Nach dem Laden kannst du neben dieser Zeile direkt auf den Link "Jetzt Qualitaetssicherung ausfuehren" klicken, um schnell mehrere Laeufe zu starten.
 
 ## Technik in kurz
 - TensorFlow.js: Bauen und Trainieren der neuronalen Netze im Browser.
