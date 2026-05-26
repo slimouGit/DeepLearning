@@ -382,36 +382,41 @@ function setupDsgvoModal() {
   });
 }
 
+/**
+ * BOX-MULLER ZUFALLSZAHL
+ * Erzeugt eine standardnormalverteilte Zufallszahl N(0,1).
+ * @returns {number} Normalverteilte Zufallszahl
+ */
 function randn() {
   let u = 0;
   let v = 0;
-/**
- * FISHER-YATES SHUFFLE Algorithmus
- * Erzeugt zufällige Permutation für Daten-Aufteilung
- * @param {number} size - Anzahl der zu shufflenden Indizes
- * @returns {number[]} Zufällig permutierte Indexliste
- */
   while (u === 0) u = Math.random();
   while (v === 0) v = Math.random();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
+/**
+ * FISHER-YATES SHUFFLE
+ * Erzeugt eine zufaellige Permutation der Indizes.
+ * @param {number} size - Anzahl der zu shufflenden Indizes
+ * @returns {number[]} Zufaellig permutierte Indexliste
+ */
 function shuffleIndices(size) {
   const indices = Array.from({ length: size }, (_, i) => i);
   for (let i = indices.length - 1; i > 0; i -= 1) {
     const j = Math.floor(Math.random() * (i + 1));
     const tmp = indices[i];
-/**
- * VALIDIERUNG von numerischen Arrays
- * Prüft auf richtige Länge und gültige numerische Werte
- * @throws {Error} Falls Array ungültig ist
- */
     indices[i] = indices[j];
     indices[j] = tmp;
   }
   return indices;
 }
 
+/**
+ * VALIDIERUNG VON ZAHLEN-ARRAYS
+ * Prueft auf richtige Laenge und gueltige numerische Werte.
+ * @throws {Error} Falls das Array ungueltig ist
+ */
 function validateArray(arr, expectedLength, label) {
   if (!Array.isArray(arr) || arr.length !== expectedLength) {
     throw new Error(label + " hat kein gueltiges Format oder falsche Laenge.");
@@ -556,15 +561,6 @@ async function predictCurve(model) {
 
   // Batch-Vorhersage für alle Punkte
   const xsT = tf.tensor2d(xs, [xs.length, 1]);
-/**
- * MSE-BERECHNUNG
- * Berechnet Mean Squared Error auf einem Datensatz (Train oder Test)
- * MSE = (1/n) * Σ(y_true - y_pred)²
- * @param {tf.Sequential} model - Trainiertes Modell
- * @param {number[]} x - Input-Werte
- * @param {number[]} y - True Label-Werte
- * @returns {number} MSE-Wert (niedrig = besser)
- */
   const ysT = model.predict(xsT);
   const ys = Array.from(await ysT.data());
 
@@ -574,6 +570,15 @@ async function predictCurve(model) {
   return { xs, ys };
 }
 
+/**
+ * MSE-BERECHNUNG
+ * Berechnet den Mean Squared Error auf einem Datensatz.
+ * MSE = (1/n) * Summe((y_true - y_pred)^2)
+ * @param {tf.Sequential} model - Trainiertes Modell
+ * @param {number[]} x - Input-Werte
+ * @param {number[]} y - True Label-Werte
+ * @returns {number} MSE-Wert (niedriger ist besser)
+ */
 async function mseOnData(model, x, y) {
   return tf.tidy(() => {
     const xs = tf.tensor2d(x, [x.length, 1]);
@@ -679,14 +684,14 @@ function plotPrediction(divId, x, y, curve, label) {
     plot_bgcolor: "#ffffff",
     xaxis: { title: "x" },
     yaxis: { title: "y" },
-/**
- * LOSS-VERLAUF PLOTTEN
- * Visualisiert MSE pro Trainingsepoche (Konvergenzverhalten)
- */
     legend: { orientation: "h", y: -0.25 }
   }, { responsive: true });
 }
 
+/**
+ * LOSS-VERLAUF PLOTTEN
+ * Visualisiert MSE pro Trainingsepoche.
+ */
 function plotLoss(divId, lossHistory) {
   const values = Array.isArray(lossHistory) ? lossHistory : [];
   const epochs = values.map((_, i) => i + 1);
@@ -702,10 +707,6 @@ function plotLoss(divId, lossHistory) {
       line: { color: COLORS.loss, width: 2 }
     }
   ], {
-/**
- * MSE-ZEILE SETZEN
- * Aktualisiert HTML-Element mit Train/Test MSE Werte
- */
     margin: { t: 10, r: 10, b: 45, l: 55 },
     paper_bgcolor: "#ffffff",
     plot_bgcolor: "#ffffff",
@@ -725,6 +726,10 @@ function plotLoss(divId, lossHistory) {
   }, { responsive: true });
 }
 
+/**
+ * MSE-ZEILE SETZEN
+ * Aktualisiert ein HTML-Element mit Train/Test-MSE-Werten.
+ */
 function setMseLine(elementId, title, mse) {
   const el = document.getElementById(elementId);
   if (!el) return;
