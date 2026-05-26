@@ -1193,10 +1193,10 @@ async function bootstrap() {
       await renderEverythingFromCurrentState();
       setPipelineProgress(100, "Vortrainierte Modelle geladen");
       const statusMessage = datasetLoaded
-        ? "Bereit: Datensatz und 3 vortrainierte Modelle wurden geladen. Alle Diagramme sind sofort nutzbar."
-        : "Bereit: Neuer Datensatz wurde erzeugt und 3 vortrainierte Modelle wurden geladen. Alle Diagramme sind sofort nutzbar.";
+        ? "Bereit: Datensatz und 3 vortrainierte Modelle wurden geladen."
+        : "Bereit: Neuer Datensatz wurde erzeugt und 3 vortrainierte Modelle wurden geladen.";
       setStatus(statusMessage, "success");
-      setActionFeedback("Datensatz + 3 Modelle geladen. Tipp: Mit 'Alles neu berechnen' startest du ein frisches Training mit den aktuellen Parametern.");
+      setActionFeedback("Datensatz + 3 Modelle geladen.");
       return;
     }
 
