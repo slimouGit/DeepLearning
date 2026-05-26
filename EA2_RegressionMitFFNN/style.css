@@ -664,6 +664,29 @@ button {
   color: #812626;
 }
 
+.qa-inline-link {
+  margin-left: 8px;
+  color: #3f2f80;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.qa-inline-link:hover,
+.qa-inline-link:focus-visible {
+  color: #2f2260;
+}
+
+.qa-inline-link.is-disabled {
+  pointer-events: none;
+  opacity: 0.5;
+  text-decoration: none;
+}
+
+.qa-inline-link[hidden] {
+  display: none;
+}
+
 .action-feedback {
   margin-top: 10px;
   padding: 10px 12px;

@@ -76,7 +76,7 @@
           <input type="range" id="paramOverfitEpochs" min="500" max="5000" step="100" value="2500" oninput="document.getElementById('paramOverfitEpochsVal').textContent=Math.round(this.value)">
         </div>
         <div class="param-row">
-          <label for="paramQaRuns">QA-Laeufe <span class="param-value" id="paramQaRunsVal">5</span></label>
+          <label for="paramQaRuns">Qualitaetssicherungslaeufe <span class="param-value" id="paramQaRunsVal">5</span></label>
           <input type="range" id="paramQaRuns" min="3" max="20" step="1" value="5" oninput="document.getElementById('paramQaRunsVal').textContent=Math.round(this.value)">
         </div>
       </div>
@@ -87,7 +87,7 @@
         <button id="btnSaveModels" type="button">Modelle speichern</button>
         <button id="btnLoadModels" type="button">Modelle laden</button>
         <button id="btnTestModels" type="button">Modelle testen (MSE)</button>
-        <button id="btnQaRandom" type="button">QA: zufaellige Testlaeufe</button>
+        <button id="btnQaRandom" type="button">Qualitaetssicherung: zufaellige Testlaeufe</button>
       </div>
     </details>
 
@@ -101,7 +101,10 @@
       </div>
     </div>
     <p id="status" class="status">Initialisierung...</p>
-    <p id="qaSummary" class="status">QA: noch nicht ausgefuehrt.</p>
+    <p id="qaSummary" class="status">
+      <span id="qaSummaryText">Qualitaetssicherung: noch nicht ausgefuehrt.</span>
+      <a id="qaRunLink" class="qa-inline-link" href="#" role="button">Jetzt Qualitaetssicherung ausfuehren</a>
+    </p>
     <div id="actionFeedback" class="action-feedback" role="status" aria-live="polite">
       <strong>Letzte Aktion:</strong> Noch keine Aktion ausgefuehrt.
     </div>
@@ -190,7 +193,7 @@
       <li>Der Abstand zwischen Train- und Test-MSE ist ein klares Overfitting-Signal.</li>
       <li>Die drei Loss-Plots (clean, best, overfit) zeigen anschaulich, wie unterschiedliche Epochenzahlen das Lernverhalten veraendern.</li>
       <li>Mehr Epochen helfen nur bis zu einem Punkt; danach werden zufaellige Stoerungen aus dem Training mitgelernt.</li>
-      <li>Mehrere zufaellige QA-Testlaeufe bestaetigen, dass die Tendenzen stabil sind, auch wenn Einzelwerte schwanken.</li>
+      <li>Mehrere zufaellige Qualitaetssicherungs-Testlaeufe bestaetigen, dass die Tendenzen stabil sind, auch wenn Einzelwerte schwanken.</li>
       <li>Die 2x100-ReLU-Architektur ist stark genug, um sowohl gute Approximation als auch bewusstes Overfitting zu demonstrieren.</li>
       <li>Gelernt wurde der zentrale Unterschied zwischen reiner Datenanpassung und echter Generalisierung auf unbekannte Daten.</li>
     </ol>
@@ -208,10 +211,10 @@
     <p>
       Technische Besonderheit: Die Seite versucht beim Start zuerst, Datensatz und vortrainierte Modelle zu laden (URL/IndexedDB).
       Falls nichts vorhanden ist, wird automatisch ein kompletter Trainingsdurchlauf gestartet und anschließend gespeichert.
-      Alle 7 Parameter (Datenpunkte, Rauschvarianz, Trainingsanteil, Clean-Epochen, Best-Fit-Epochen, Overfit-Epochen, QA-Laeufe)
+      Alle 7 Parameter (Datenpunkte, Rauschvarianz, Trainingsanteil, Clean-Epochen, Best-Fit-Epochen, Overfit-Epochen, Qualitaetssicherungslaeufe)
       sind im ausklappbaren "Entwickler-Steuerung / Parameter" Panel konfigurierbar.
       Nach der Einstellung wird "Alles neu berechnen" gedrückt, um sofort alle Plots zu aktualisieren.
-      Das Panel erlaubt auch das gezielte Speichern, Laden und Testen von Datensaetzen und Modellen inklusive mehrerer zufaelliger QA-Testlaeufe.
+      Das Panel erlaubt auch das gezielte Speichern, Laden und Testen von Datensaetzen und Modellen inklusive mehrerer zufaelliger Qualitaetssicherungs-Testlaeufe.
    </p>
 
     <h3>2) <strong>Fachlich</strong></h3>

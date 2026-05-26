@@ -14,7 +14,7 @@ const CONFIG = {
   bestEpochs: 80,            // Epochen für Best-Fit Modell (R3)
   overfitEpochs: 2500,       // Epochen für Overfitting Modell (R4)
   curvePoints: 250,          // Punkte für Modellkurven-Visualisierung
-  qaRuns: 5,                 // Anzahl zufaelliger QA-Tests
+  qaRuns: 5,                 // Anzahl zufaelliger Qualitaetssicherungs-Tests
   pretrainedModelUrls: {
     clean: "models/clean/model.json",
     best: "models/best/model.json",
@@ -147,12 +147,32 @@ function setControlsDisabled(disabled) {
     const element = document.getElementById(id);
     if (element) element.disabled = Boolean(disabled);
   });
+
+  const qaRunLink = document.getElementById("qaRunLink");
+  if (qaRunLink) {
+    const isDisabled = Boolean(disabled);
+    qaRunLink.classList.toggle("is-disabled", isDisabled);
+    qaRunLink.setAttribute("aria-disabled", String(isDisabled));
+    if (isDisabled) {
+      qaRunLink.setAttribute("tabindex", "-1");
+    } else {
+      qaRunLink.removeAttribute("tabindex");
+    }
+  }
 }
 
-function setQaSummary(message) {
-  const qaEl = document.getElementById("qaSummary");
+function setQaSummary(message, showQuickRunLink = null) {
+  const qaEl = document.getElementById("qaSummaryText");
   if (qaEl) {
     qaEl.textContent = message;
+  }
+
+  const qaRunLink = document.getElementById("qaRunLink");
+  if (qaRunLink) {
+    const shouldShow = typeof showQuickRunLink === "boolean"
+      ? showQuickRunLink
+      : /noch nicht ausgefuehrt/i.test(message);
+    qaRunLink.hidden = !shouldShow;
   }
 }
 
@@ -954,9 +974,10 @@ async function runQaRandomizedTests(runs = CONFIG.qaRuns) {
   };
 
   setQaSummary(
-    `QA (${count} Laeufe): clean train/test ${avg.cleanTrain.toFixed(5)} / ${avg.cleanTest.toFixed(5)} | `
+    `Qualitaetssicherung (${count} Laeufe): clean train/test ${avg.cleanTrain.toFixed(5)} / ${avg.cleanTest.toFixed(5)} | `
     + `best train/test ${avg.bestTrain.toFixed(5)} / ${avg.bestTest.toFixed(5)} | `
-    + `overfit train/test ${avg.overfitTrain.toFixed(5)} / ${avg.overfitTest.toFixed(5)}`
+    + `overfit train/test ${avg.overfitTrain.toFixed(5)} / ${avg.overfitTest.toFixed(5)}`,
+    false
   );
 }
 
@@ -1031,7 +1052,7 @@ async function runFullPipeline() {
     saveLossHistories();
 
     updateProgress(100, "Pipeline abgeschlossen");
-    setQaSummary("QA: noch nicht ausgefuehrt.");
+    setQaSummary("Qualitaetssicherung: noch nicht ausgefuehrt.");
     setStatus("Fertig: R1-R4, Loss-Plots und MSE sind aktualisiert.");
   } finally {
     setControlsDisabled(false);
@@ -1095,7 +1116,7 @@ function wireUI() {
         await renderPredictions(appState.dataSplit);
         renderMseLines();
       }
-      setQaSummary("QA: noch nicht ausgefuehrt.");
+      setQaSummary("Qualitaetssicherung: noch nicht ausgefuehrt.");
       setStatus("Datensatz aus localStorage geladen.");
       setActionFeedback("Datensatz geladen.");
     } catch (err) {
@@ -1125,7 +1146,7 @@ function wireUI() {
         appState.dataSplit = splitDataRandom(baseData, CONFIG.trainFraction);
       }
       await renderEverythingFromCurrentState();
-      setQaSummary("QA: noch nicht ausgefuehrt.");
+      setQaSummary("Qualitaetssicherung: noch nicht ausgefuehrt.");
       setStatus("Modelle aus IndexedDB geladen und ausgewertet.");
       setActionFeedback("Modelle geladen und ausgewertet.");
     } catch (err) {
@@ -1147,26 +1168,39 @@ function wireUI() {
     }
   });
 
-  bindClick("btnQaRandom", async () => {
+  const runQaHandler = async () => {
     try {
       readParamsFromUI();
-      setStatus(`Starte QA mit ${CONFIG.qaRuns} zufaelligen Testlaeufen...`);
+      setStatus(`Starte Qualitaetssicherung mit ${CONFIG.qaRuns} zufaelligen Testlaeufen...`);
       await runQaRandomizedTests(CONFIG.qaRuns);
-      setStatus(`QA abgeschlossen (${CONFIG.qaRuns} zufaellige Testlaeufe).`);
-      setActionFeedback(`QA abgeschlossen mit ${CONFIG.qaRuns} Testlaeufen.`);
+      setStatus(`Qualitaetssicherung abgeschlossen (${CONFIG.qaRuns} zufaellige Testlaeufe).`);
+      setActionFeedback(`Qualitaetssicherung abgeschlossen mit ${CONFIG.qaRuns} Testlaeufen.`);
     } catch (err) {
       setStatus("Fehler: " + err.message);
       setActionFeedback(err.message, true);
       console.error(err);
     }
-  });
+  };
+
+  bindClick("btnQaRandom", runQaHandler);
+
+  const qaRunLink = document.getElementById("qaRunLink");
+  if (qaRunLink) {
+    qaRunLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      if (qaRunLink.getAttribute("aria-disabled") === "true") {
+        return;
+      }
+      void runQaHandler();
+    });
+  }
 }
 
 async function bootstrap() {
   wireUI();
   setupNavigation();
   setupDsgvoModal();
-  setQaSummary("QA: noch nicht ausgefuehrt.");
+  setQaSummary("Qualitaetssicherung: noch nicht ausgefuehrt.");
   setActionFeedback("Anwendung gestartet.");
   try {
     let datasetLoaded = false;
