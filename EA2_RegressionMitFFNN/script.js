@@ -29,6 +29,7 @@ const CONFIG = {
 const STORAGE_KEYS = {
   dataset: "ea2_dataset_v1",
   losses: "ea2_losses_v1",
+  modelParams: "ea2_model_params_v1",
   modelClean: "indexeddb://ea2_ffnn_clean",
   modelBest: "indexeddb://ea2_ffnn_best",
   modelOverfit: "indexeddb://ea2_ffnn_overfit"
@@ -834,6 +835,82 @@ function saveLossHistories() {
   localStorage.setItem(STORAGE_KEYS.losses, JSON.stringify(appState.losses));
 }
 
+function getConfigSnapshot() {
+  return {
+    N: CONFIG.N,
+    noiseVar: CONFIG.noiseVar,
+    trainFraction: CONFIG.trainFraction,
+    cleanEpochs: CONFIG.cleanEpochs,
+    bestEpochs: CONFIG.bestEpochs,
+    overfitEpochs: CONFIG.overfitEpochs,
+    qaRuns: CONFIG.qaRuns
+  };
+}
+
+function saveModelParams() {
+  localStorage.setItem(STORAGE_KEYS.modelParams, JSON.stringify(getConfigSnapshot()));
+}
+
+function loadModelParams() {
+  const raw = localStorage.getItem(STORAGE_KEYS.modelParams);
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") {
+    return null;
+  }
+
+  const snapshot = {};
+  if (Number.isFinite(parsed.N)) snapshot.N = parsed.N;
+  if (Number.isFinite(parsed.noiseVar)) snapshot.noiseVar = parsed.noiseVar;
+  if (Number.isFinite(parsed.trainFraction)) snapshot.trainFraction = parsed.trainFraction;
+  if (Number.isFinite(parsed.cleanEpochs)) snapshot.cleanEpochs = parsed.cleanEpochs;
+  if (Number.isFinite(parsed.bestEpochs)) snapshot.bestEpochs = parsed.bestEpochs;
+  if (Number.isFinite(parsed.overfitEpochs)) snapshot.overfitEpochs = parsed.overfitEpochs;
+  if (Number.isFinite(parsed.qaRuns)) snapshot.qaRuns = parsed.qaRuns;
+
+  return snapshot;
+}
+
+function applyConfigSnapshot(snapshot) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return;
+  }
+
+  if (Number.isFinite(snapshot.N)) CONFIG.N = Math.round(snapshot.N);
+  if (Number.isFinite(snapshot.noiseVar)) CONFIG.noiseVar = snapshot.noiseVar;
+  if (Number.isFinite(snapshot.trainFraction)) CONFIG.trainFraction = snapshot.trainFraction;
+  if (Number.isFinite(snapshot.cleanEpochs)) CONFIG.cleanEpochs = Math.round(snapshot.cleanEpochs);
+  if (Number.isFinite(snapshot.bestEpochs)) CONFIG.bestEpochs = Math.round(snapshot.bestEpochs);
+  if (Number.isFinite(snapshot.overfitEpochs)) CONFIG.overfitEpochs = Math.round(snapshot.overfitEpochs);
+  if (Number.isFinite(snapshot.qaRuns)) CONFIG.qaRuns = Math.round(snapshot.qaRuns);
+}
+
+function syncControlsFromConfig() {
+  const sliderDefs = [
+    { id: "paramN", valId: "paramNVal", value: CONFIG.N, fmt: (v) => String(Math.round(Number(v))) },
+    { id: "paramNoise", valId: "paramNoiseVal", value: CONFIG.noiseVar, fmt: (v) => Number(v).toFixed(2) },
+    { id: "paramSplit", valId: "paramSplitVal", value: CONFIG.trainFraction, fmt: (v) => Math.round(Number(v) * 100) + "%" },
+    { id: "paramCleanEpochs", valId: "paramCleanEpochsVal", value: CONFIG.cleanEpochs, fmt: (v) => String(Math.round(Number(v))) },
+    { id: "paramBestEpochs", valId: "paramBestEpochsVal", value: CONFIG.bestEpochs, fmt: (v) => String(Math.round(Number(v))) },
+    { id: "paramOverfitEpochs", valId: "paramOverfitEpochsVal", value: CONFIG.overfitEpochs, fmt: (v) => String(Math.round(Number(v))) },
+    { id: "paramQaRuns", valId: "paramQaRunsVal", value: CONFIG.qaRuns, fmt: (v) => String(Math.round(Number(v))) }
+  ];
+
+  sliderDefs.forEach(({ id, valId, value, fmt }) => {
+    const slider = document.getElementById(id);
+    const label = document.getElementById(valId);
+    if (!slider || !label) {
+      return;
+    }
+
+    slider.value = String(value);
+    label.textContent = fmt(value);
+  });
+}
+
 function loadLossHistories() {
   const raw = localStorage.getItem(STORAGE_KEYS.losses);
   if (!raw) {
@@ -890,12 +967,20 @@ async function saveModels() {
   await appState.models.best.save(STORAGE_KEYS.modelBest);
   await appState.models.overfit.save(STORAGE_KEYS.modelOverfit);
   saveLossHistories();
+  saveModelParams();
 }
 
 async function loadModels() {
   appState.models.clean = await tf.loadLayersModel(STORAGE_KEYS.modelClean);
   appState.models.best = await tf.loadLayersModel(STORAGE_KEYS.modelBest);
   appState.models.overfit = await tf.loadLayersModel(STORAGE_KEYS.modelOverfit);
+
+  const loadedParams = loadModelParams();
+  if (loadedParams) {
+    applyConfigSnapshot(loadedParams);
+    syncControlsFromConfig();
+  }
+
   try {
     loadLossHistories();
   } catch (err) {
@@ -1205,6 +1290,7 @@ async function bootstrap() {
   wireUI();
   setupNavigation();
   setupDsgvoModal();
+  syncControlsFromConfig();
   setQaSummary("Qualitaetssicherung: noch nicht ausgefuehrt.");
   setActionFeedback("Anwendung gestartet.");
   try {
