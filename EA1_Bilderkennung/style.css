@@ -8,7 +8,7 @@ html {
 
 :root {
   --container-max-width: 760px;
-  --examples-header-height: 0px;
+  --examples-header-height: 170px;
   --md-sys-color-primary: #6750a4;
   --md-sys-color-on-primary: #ffffff;
   --md-sys-color-primary-container: #ede8f5;
@@ -26,6 +26,54 @@ body {
   background: #f0f0f0;
   color: var(--md-sys-color-on-surface);
   padding-top: var(--examples-header-height);
+}
+
+.project-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+
+.project-nav a {
+  color: #6750a4;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  margin: 0 0 8px;
+}
+
+h2 {
+  margin: 0 0 14px;
+  font-size: 1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+p {
+  line-height: 1.6;
 }
 
 .container {
@@ -47,7 +95,7 @@ body {
   display: grid;
   gap: 14px;
   position: fixed;
-  top: 0;
+  top: 3.5rem;
   left: 50%;
   transform: translateX(-50%);
   width: min(var(--container-max-width), calc(100% - 32px));
@@ -147,13 +195,6 @@ body {
 
 .nav-toggle[aria-expanded="true"] .nav-toggle-bar:nth-child(3) {
   transform: translateY(-6px) rotate(-45deg);
-}
-
-h1 {
-  font-size: clamp(1.5rem, 2.5vw, 2rem);
-  line-height: 1.25;
-  letter-spacing: 0.01em;
-  margin-bottom: 8px;
 }
 
 .hint {
