@@ -31,7 +31,15 @@ const dsgvoCloseBtn2 = document.getElementById('dsgvoCloseBtn2');
 
 window.addEventListener('DOMContentLoaded', async () => {
   $('trainingText').value = await loadDefaultText();
-  $('backend').textContent = `Backend: ${tf.getBackend()}`;
+
+  try {
+    await tf.ready();
+    const backend = typeof tf.getBackend === 'function' ? tf.getBackend() : '';
+    $('backend').textContent = `Backend: ${backend || 'nicht verfuegbar'}`;
+  } catch {
+    $('backend').textContent = 'Backend: nicht verfuegbar';
+  }
+
   setPrepProgress(0, 'Datenvorbereitung');
   setTrainProgress(0, 'Training');
   setupNavigation();
