@@ -15,7 +15,7 @@ const DEFAULT_TEXT_URL = 'default_text.txt';
 const state = {
   tokens: [], vocab: [], tokenToId: new Map(), idToToken: [], sequences: [], labels: [],
   trainX: null, trainY: null, testX: [], testY: [], model: null, seqLen: 5,
-  lastPredictions: [], lossHistory: [], lossChart: null, autoTimer: null
+  lastPredictions: [], lossHistory: [], lossChart: null, topKChart: null, autoTimer: null
 };
 
 const $ = (id) => document.getElementById(id);
@@ -99,6 +99,7 @@ function bindEvents() {
   $('autoBtn').addEventListener('click', autoGenerate);
   $('stopBtn').addEventListener('click', stopAuto);
   $('resetBtn').addEventListener('click', resetAll);
+  $('reconstructBtn').addEventListener('click', runReconstructionTest);
 }
 
 function syncFixedHeaderOffset() {
@@ -388,6 +389,10 @@ function buildModel() {
   model.add(tf.layers.dense({ units: state.vocab.length, activation: 'softmax' }));
   model.compile({ optimizer: tf.train.adam(learningRate), loss: 'categoricalCrossentropy', metrics: ['accuracy'] });
   state.model = model;
+
+  $('architectureSummary').textContent =
+    `Embedding (${embeddingDim}) -> LSTM (${units}) -> LSTM (${units}) -> Dense Softmax (${state.vocab.length}). ` +
+    `Optimizer: Adam (LR ${learningRate}), Batch-Size: 32, Loss: categorical cross-entropy.`;
 }
 
 async function trainModel() {
@@ -428,11 +433,12 @@ async function trainModel() {
   $('predictBtn').disabled = false;
   $('nextBtn').disabled = false;
   $('autoBtn').disabled = false;
+  $('reconstructBtn').disabled = false;
   setTrainProgress(100, 'Training abgeschlossen');
 }
 
 function setButtonsDuringTraining(isTraining) {
-  for (const id of ['prepareBtn','trainBtn','predictBtn','nextBtn','autoBtn','resetBtn']) $(id).disabled = isTraining;
+  for (const id of ['prepareBtn','trainBtn','predictBtn','nextBtn','autoBtn','resetBtn','reconstructBtn']) $(id).disabled = isTraining;
 }
 
 function validatePrompt(prompt) {
@@ -613,6 +619,89 @@ function renderMetrics(metrics) {
     ${rows}
     <div class="metric">Cross Entropy: ${metrics.crossEntropy.toFixed(4)}</div>
     <div class="metric">Perplexity: ${metrics.perplexity.toFixed(2)}</div>`;
+
+  updateTopKChart(metrics);
+}
+
+function updateTopKChart(metrics) {
+  if (!metrics || metrics.note) return;
+  const chartEl = $('topkChart');
+  const labels = Object.keys(metrics.hits).map(k => `Top-${k}`);
+  const values = Object.entries(metrics.hits).map(([, v]) => Number(((v / metrics.count) * 100).toFixed(2)));
+
+  if (!state.topKChart) {
+    state.topKChart = new Chart(chartEl, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Trefferquote in %',
+          data: values,
+          backgroundColor: '#6750a4'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true, max: 100 } }
+      }
+    });
+  } else {
+    state.topKChart.data.labels = labels;
+    state.topKChart.data.datasets[0].data = values;
+    state.topKChart.update();
+  }
+}
+
+async function runReconstructionTest() {
+  if (!state.model || !state.tokens.length || !state.sequences.length) {
+    $('reconstructionResult').innerHTML = '<div class="metric">Bitte erst Daten vorbereiten und trainieren.</div>';
+    return;
+  }
+
+  $('reconstructBtn').disabled = true;
+  $('reconstructionResult').innerHTML = '<div class="metric">Rekonstruktionstest läuft ...</div>';
+
+  const sampleCount = Math.min(120, state.sequences.length);
+  let exactHits = 0;
+
+  for (let i = 0; i < sampleCount; i++) {
+    const window = state.sequences[i];
+    const expected = state.labels[i];
+    const input = tf.tensor2d([window], [1, state.seqLen], 'int32');
+    const predTensor = state.model.predict(input);
+    const predId = predTensor.argMax(-1).dataSync()[0];
+    input.dispose();
+    predTensor.dispose();
+    if (predId === expected) exactHits++;
+    if (i % 15 === 0) await tf.nextFrame();
+  }
+
+  const seedLen = Math.max(1, state.seqLen);
+  const genLen = Math.min(25, Math.max(8, Math.floor(state.tokens.length * 0.08)));
+  const seedTokens = state.tokens.slice(0, seedLen);
+  const generated = [...seedTokens];
+  for (let i = 0; i < genLen; i++) {
+    const prompt = generated.join(' ');
+    const candidates = await predictCandidates(prompt);
+    const next = selectNextWord(candidates);
+    if (!next) break;
+    generated.push(next);
+    if (isSentenceBoundaryToken(next) && i > 6) break;
+  }
+
+  const reference = state.tokens.slice(0, generated.length);
+  let overlap = 0;
+  for (let i = 0; i < generated.length; i++) {
+    if (generated[i] === reference[i]) overlap++;
+  }
+
+  const exactPct = (exactHits / sampleCount) * 100;
+  const overlapPct = (overlap / Math.max(1, generated.length)) * 100;
+  $('reconstructionResult').innerHTML = `
+    <div class="metric">Top-1 auf Trainingsfenstern: ${exactHits}/${sampleCount} = ${exactPct.toFixed(1)}%</div>
+    <div class="metric">Autoregressive Rekonstruktion (Prefix): ${overlap}/${generated.length} = ${overlapPct.toFixed(1)}%</div>
+    <div class="metric">Interpretation: Hohe Werte deuten auf memorisierte Trainingsmuster hin (Datenschutzrisiko bei sensiblen Daten).</div>`;
+  $('reconstructBtn').disabled = false;
 }
 
 function updateLossChart() {
@@ -641,13 +730,16 @@ function resetAll() {
   $('promptInput').value = '';
   $('predictions').innerHTML = '';
   $('metrics').textContent = 'Noch keine Resultate.';
+  $('reconstructionResult').textContent = 'Noch kein Rekonstruktionstest durchgeführt.';
+  $('architectureSummary').textContent = 'Noch nicht trainiert.';
   $('dataInfo').textContent = 'Noch keine Daten vorbereitet.';
   $('modelStatus').textContent = 'Status: nicht trainiert';
   setPrepProgress(0, 'Datenvorbereitung');
   setTrainProgress(0, 'Training');
-  for (const id of ['trainBtn','predictBtn','nextBtn','autoBtn','stopBtn']) $(id).disabled = true;
+  for (const id of ['trainBtn','predictBtn','nextBtn','autoBtn','stopBtn','reconstructBtn']) $(id).disabled = true;
   $('prepareBtn').disabled = false;
   if (state.lossChart) { state.lossChart.destroy(); state.lossChart = null; }
+  if (state.topKChart) { state.topKChart.destroy(); state.topKChart = null; }
   setMobileNavigationState(false);
   updateScrollControls();
 }

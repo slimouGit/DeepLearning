@@ -1,0 +1,12 @@
+deep learning ist ein teilgebiet der kuenstlichen intelligenz . neuronale netze lernen aus daten .
+deep learning ist ein teilgebiet der kuenstlichen intelligenz . daten sind fuer das training entscheidend .
+deep learning ist ein teilgebiet der kuenstlichen intelligenz . modelle lernen aus vielen beispielen .
+ein language model lernt wahrscheinliche wortfolgen aus einem text .
+das modell sagt das naechste wort auf basis der vorherigen woerter voraus .
+ein rekurrentes neuronales netz verarbeitet sequenzen .
+ein long short term memory netz kann informationen ueber mehrere schritte speichern .
+beim training werden die gewichte angepasst .
+der softmax output liefert eine wahrscheinlichkeitsverteilung ueber das dictionary .
+die cross entropy misst den fehler zwischen zielwort und vorhergesagter verteilung .
+mit mehr daten kann ein neuronales netz bessere muster lernen .
+bei sehr wenigen daten kann ein modell den trainings text auswendig lernen .

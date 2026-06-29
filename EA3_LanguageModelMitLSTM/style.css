@@ -412,6 +412,29 @@ button.danger {
   border-radius: 8px;
 }
 
+.help-details {
+  margin-top: 0.9rem;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  background: #fafafa;
+}
+
+.help-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.help-details ul {
+  margin: 0.65rem 0 0;
+  padding-left: 1.25rem;
+  color: var(--md-sys-color-on-surface-variant);
+}
+
+.charts-row {
+  margin-top: 0.95rem;
+}
+
 .site-footer {
   text-align: center;
   padding: 24px 16px;

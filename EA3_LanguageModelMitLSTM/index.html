@@ -120,6 +120,15 @@
       <div class="help">
         <strong>Hinweis:</strong> Wörter außerhalb des Dictionary werden als &lt;UNK&gt; behandelt. Die Eingabe sollte aus Tokens bestehen, die durch Leerzeichen getrennt sind.
       </div>
+      <details class="help-details">
+        <summary>Kontextsensitive Hilfe anzeigen</summary>
+        <ul>
+          <li><strong>Vorhersage:</strong> Zeigt Top-Wörter mit Wahrscheinlichkeiten, Auswahl eines Wortes hängt es an den Prompt an.</li>
+          <li><strong>Weiter:</strong> Nimmt automatisch das wahrscheinlichste nächste Wort (Top-1).</li>
+          <li><strong>Auto:</strong> Fügt bis zu 10 Wörter autoregressiv hinzu, <strong>Stopp</strong> unterbricht sofort.</li>
+          <li><strong>Reset:</strong> Setzt Eingabetext, Metriken, Diagramme und Modellstatus zurück.</li>
+        </ul>
+      </details>
     </section>
 
     <section class="card wide" id="results">
@@ -130,32 +139,44 @@
         </div>
         <div id="metrics" class="metrics">Noch keine Resultate.</div>
       </div>
+      <div class="grid two charts-row">
+        <div>
+          <canvas id="topkChart" height="160"></canvas>
+        </div>
+        <div>
+          <h3>Experiment 1: Finale Architektur</h3>
+          <p id="architectureSummary" class="hint">Noch nicht trainiert.</p>
+          <div class="actions">
+            <button id="reconstructBtn" disabled>Rekonstruktionstest (Datenschutz)</button>
+          </div>
+          <div id="reconstructionResult" class="metrics">Noch kein Rekonstruktionstest durchgeführt.</div>
+        </div>
+      </div>
     </section>
 
     <section class="card wide" id="discussion">
       <h2>Diskussion</h2>
       <ol>
-        <li>Das Modell lernt lokale Wortfolgen aus dem Trainingskorpus und kann dadurch plausible nächste Wörter vorschlagen.</li>
-        <li>Bei kleinen Datenmengen rekonstruiert das Modell Teile des Trainingskorpus häufig sehr genau.</li>
-        <li>Das ist didaktisch hilfreich, zeigt aber auch ein mögliches Datenschutzproblem bei sensiblen Trainingsdaten.</li>
-        <li>Eine größere Datenmenge verbessert die Generalisierung, erhöht aber Trainingszeit und Speicherbedarf im Browser.</li>
-        <li>Die Sequenzlänge beeinflusst, wie viel Kontext das LSTM für die Vorhersage nutzen kann.</li>
-        <li>Die Top-k-Werte sind oft aussagekräftiger als nur Top-1, weil mehrere Folgewörter sprachlich plausibel sein können.</li>
-        <li>Eine Lernrate von 0.001 ist stabiler; 0.01 kann schneller lernen, aber stärker schwanken.</li>
-        <li>Ein Embedding vor dem LSTM reduziert die starre Integer-Repräsentation der Wörter.</li>
-        <li>Die Anwendung ist bewusst transparent gehalten, damit Training, Loss und Vorhersage nachvollziehbar bleiben.</li>
-        <li>Für produktive Systeme wären größere Daten, Validierung, Speichermanagement und Datenschutzprüfung notwendig.</li>
+        <li>Das Modell erzeugt nach wenigen Epochen bereits plausible lokale Wortfolgen, insbesondere bei häufigen Token-Kombinationen.</li>
+        <li>Die Top-1-Genauigkeit bleibt bei kleinen Korpora begrenzt, waehrend Top-5 und Top-10 deutlich stabilere Aussagen ueber die Modellqualitaet liefern.</li>
+        <li>Mit steigender Sequenzlaenge verbessert sich der Kontextbezug, allerdings steigen Rechenzeit und Speicherbedarf im Browser merklich.</li>
+        <li>Eine Lernrate von 0.001 trainiert robuster, waehrend 0.01 schneller konvergieren kann, aber haeufigere Loss-Schwankungen zeigt.</li>
+        <li>Der beobachtete Perplexity-Verlauf korreliert gut mit der subjektiven Textqualitaet der autoregressiven Generierung.</li>
+        <li>Der Rekonstruktionstest zeigt, dass das Modell Trainingsmuster teilweise reproduziert; das ist fuer das Verstaendnis nuetzlich, aber datenschutzrelevant.</li>
+        <li>Bei unbekannten Woertern verschlechtert das &lt;UNK&gt;-Mapping die Vorhersage, weshalb die Datensatzabdeckung entscheidend ist.</li>
+        <li>Die Interaktion mit Vorhersage, Weiter und Auto macht den autoregressiven Mechanismus fuer Nutzende gut nachvollziehbar.</li>
+        <li>Fuer produktive Anwendungen waeren groessere, bereinigte Daten, separates Validierungsset, fruehes Stoppen und eine systematische Fehleranalyse notwendig.</li>
       </ol>
     </section>
 
     <section class="card wide" id="documentation">
       <h2>Dokumentation</h2>
       <h3>1) <strong>Technisch</strong></h3>
-      <p><strong>TensorFlow.js</strong> wird für Modellaufbau, Training und Inferenz im Browser verwendet. <strong>tfjs-vis</strong> kann Trainingsmetriken visualisieren. <strong>Chart.js</strong> visualisiert den Loss-Verlauf als Diagramm.</p>
-      <p>Die Lösung nutzt ein Embedding-Layer, zwei gestapelte LSTM-Layer mit je konfigurierbarer Unit-Zahl und einen Dense-Softmax-Output in Dictionary-Größe. Der Loss ist categoricalCrossentropy, der Optimizer ist Adam. Die Datenvorbereitung zeigt einen gleichmäßigeren Fortschritt inklusive geschätzter Restzeit (ETA) pro Verarbeitungsschritt.</p>
+      <p><strong>TensorFlow.js</strong> wird fuer Modellaufbau, Training und Inferenz direkt im Browser eingesetzt. <strong>Chart.js</strong> visualisiert den Loss-Verlauf und die Top-k-Trefferquote als Diagramme. Die Anwendung laeuft clientseitig in HTML/CSS/JavaScript ohne zusaetzlichen Backend-Service.</p>
+      <p>Das Modell ist als Embedding -> LSTM -> LSTM -> Dense(Softmax) umgesetzt; die Softmax-Dimension entspricht der Dictionary-Groesse. Optimiert wird mit Adam (Lernrate 0.001 oder 0.01), Batch-Size 32 und categoricalCrossentropy als Loss. Technische Besonderheiten sind Fortschrittsanzeigen mit ETA fuer Datenvorbereitung/Training, Top-k-Auswertung (k=1/5/10/20/100), Perplexity-Berechnung und ein Rekonstruktionstest zur Schaetzung von Memorization.</p>
       <h3>2) <strong>Fachlich</strong></h3>
-      <p>Der Text wird normalisiert, tokenisiert und in ein Dictionary überführt. Aus jedem Fenster der Länge n wird ein Trainingsbeispiel erzeugt; das Folgewort ist das Target. Die Vorhersage liefert eine Wahrscheinlichkeitsverteilung über alle Wörter im Dictionary. Daraus werden Top-k-Wörter angezeigt und für die automatische Textgenerierung autoregressiv an den Prompt angehängt.</p>
-      <p>Für die automatische Generierung wurde eine Satzgrenzen-Logik ergänzt: Sobald als nächstes Token ein Satzendezeichen (., !, ?) vorhergesagt wird, stoppt der Auto-Modus. Dadurch werden unnatürliche Übergänge in den Folgesatz reduziert und die Ausgabe bleibt näher am semantischen Kontext des begonnenen Satzes.</p>
+      <p>Der Trainingskorpus wird normalisiert, tokenisiert und in ein haeufigkeitsbasiertes Dictionary ueberfuehrt (inkl. &lt;PAD&gt;/&lt;UNK&gt;). Aus gleitenden Fenstern der Laenge n werden Eingabesequenzen erzeugt; das jeweils folgende Wort ist das Ziel fuer die Multi-Class-Klassifikation. Die Inferenz berechnet eine Wahrscheinlichkeitsverteilung ueber das Dictionary, aus der Top-k-Kandidaten angezeigt oder fuer die autoregressive Textgenerierung verwendet werden.</p>
+      <p>Resultate werden ueber Top-k-Treffer, Cross-Entropy und Perplexity auf einem Testsplit bewertet. Die Frage der Rekonstruktion der Trainingsdaten wird ueber einen separaten Rekonstruktionstest betrachtet, um moegliche Datenschutzrisiken bei sensiblen Daten sichtbar zu machen. Verwendete Quellen/Hintergrund: TensorFlow.js Dokumentation, Mikolov et al. (RNN Language Model), sowie Uebersichtsartikel zu Next-Word-Prediction und Perplexity aus den in der Aufgabenstellung genannten Links.</p>
     </section>
 
     <footer class="site-footer">
